@@ -7,7 +7,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
-namespace Graphql.AutoReflection.NetCore
+namespace Graphql.Reflection.NetCore
 {
     public class GraphQLUserContext : Dictionary<string, object>, IProvideClaimsPrincipal
     {

@@ -12,9 +12,9 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
-using Graphql.AutoReflection.NetCore.Utilities;
+using Graphql.Reflection.NetCore.Utilities;
 
-namespace Graphql.AutoReflection.NetCore.Generic
+namespace Graphql.Reflection.NetCore.Generic
 {
     public static class DbContextExtensions
     {

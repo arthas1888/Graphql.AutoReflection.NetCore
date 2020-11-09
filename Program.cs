@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Graphql.AutoReflection.NetCore
+namespace Graphql.Reflection.NetCore
 {
     class Program
     {

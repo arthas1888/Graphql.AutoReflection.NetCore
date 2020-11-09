@@ -5,9 +5,9 @@ using GraphQL.Types;
 using GraphQL.Validation;
 using Microsoft.AspNetCore.Http;
 using System;
-using Graphql.AutoReflection.NetCore.Utilities;
+using Graphql.Reflection.NetCore.Utilities;
 
-namespace Graphql.AutoReflection.NetCore.Generic
+namespace Graphql.Reflection.NetCore.Generic
 {
     public class CUDResolver : IFieldResolver
     {

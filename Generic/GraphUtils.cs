@@ -1,4 +1,4 @@
-﻿using Graphql.AutoReflection.NetCore.Utilities;
+﻿using Graphql.Reflection.NetCore.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,12 +6,12 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
-using Graphql.AutoReflection.NetCore.Models;
+using Graphql.Reflection.NetCore.Models;
 using GraphQL;
 using GraphQL.Language.AST;
 using GraphQL.Types;
 
-namespace Graphql.AutoReflection.NetCore.Generic
+namespace Graphql.Reflection.NetCore.Generic
 {
     public static class GraphUtils
     {

@@ -7,10 +7,10 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using Newtonsoft.Json.Linq;
-using Graphql.AutoReflection.NetCore.Utilities;
-using Graphql.AutoReflection.NetCore.Models;
+using Graphql.Reflection.NetCore.Utilities;
+using Graphql.Reflection.NetCore.Models;
 
-namespace Graphql.AutoReflection.NetCore.Generic
+namespace Graphql.Reflection.NetCore.Generic
 {
     public interface IDatabaseMetadata
     {

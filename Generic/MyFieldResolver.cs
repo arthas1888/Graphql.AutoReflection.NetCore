@@ -12,7 +12,7 @@ using System.Text;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Graphql.AutoReflection.NetCore.Generic
+namespace Graphql.Reflection.NetCore.Generic
 {
     public class MyFieldResolver : IFieldResolver
     {

@@ -5,6 +5,8 @@
 		<TargetFramework>netcoreapp3.1</TargetFramework>
 		<Company>SER Soluciones</Company>
 		<Version>0.10.0</Version>
+		<AssemblyName>Graphql.Reflection.NetCore</AssemblyName>
+		<RootNamespace>Graphql.Reflection.NetCore</RootNamespace>
 	</PropertyGroup>
 	<ItemGroup>
 

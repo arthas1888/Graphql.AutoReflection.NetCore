@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
-namespace Graphql.AutoReflection.NetCore.Custom
+namespace Graphql.Reflection.NetCore.Custom
 {
     public class CustomGraphQLRequest
     {

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Graphql.AutoReflection.NetCore.Utilities
+namespace Graphql.Reflection.NetCore.Utilities
 {
     public class PagedResultBase
     {

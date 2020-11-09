@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Graphql.AutoReflection.NetCore.Models
+namespace Graphql.Reflection.NetCore.Models
 {
     public interface IBaseModel
     {

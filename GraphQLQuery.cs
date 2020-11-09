@@ -1,14 +1,14 @@
-﻿using Graphql.AutoReflection.NetCore.Models;
+﻿using Graphql.Reflection.NetCore.Models;
 using GraphQL.Types;
 using Microsoft.AspNetCore.Http;
 using System.Linq;
 using System;
 using System.Reflection;
-using Graphql.AutoReflection.NetCore.Utilities;
+using Graphql.Reflection.NetCore.Utilities;
 using GraphQL.DataLoader;
 using Microsoft.EntityFrameworkCore;
 
-namespace Graphql.AutoReflection.NetCore.Generic
+namespace Graphql.Reflection.NetCore.Generic
 {
     public class GraphQLQuery : ObjectGraphType<object>
     {

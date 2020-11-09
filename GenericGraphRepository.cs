@@ -14,16 +14,16 @@ using System.Linq.Dynamic.Core;
 using GraphQL.Types;
 using GraphQL.DataLoader;
 using GraphQL;
-using Graphql.AutoReflection.NetCore.Models;
+using Graphql.Reflection.NetCore.Models;
 using Microsoft.EntityFrameworkCore.DynamicLinq;
 using System.ComponentModel.DataAnnotations;
-using Graphql.AutoReflection.NetCore.Utilities;
-using Graphql.AutoReflection.NetCore.Generic;
+using Graphql.Reflection.NetCore.Utilities;
+using Graphql.Reflection.NetCore.Generic;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace Graphql.AutoReflection.NetCore
+namespace Graphql.Reflection.NetCore
 {
     public class GenericGraphRepository<T, TContext> : IGraphRepository<T>
             where T : class

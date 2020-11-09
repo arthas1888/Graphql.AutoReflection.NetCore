@@ -1,13 +1,13 @@
-﻿using Graphql.AutoReflection.NetCore.Generic;
+﻿using Graphql.Reflection.NetCore.Generic;
 using GraphQL;
 using GraphQL.Types;
 using GraphQL.Utilities;
 using System;
 using NetTopologySuite.Geometries;
-using Graphql.AutoReflection.NetCore.Utilities;
+using Graphql.Reflection.NetCore.Utilities;
 using Microsoft.EntityFrameworkCore;
 
-namespace Graphql.AutoReflection.NetCore
+namespace Graphql.Reflection.NetCore
 {
     public class AppSchema : Schema
     {

@@ -1,10 +1,10 @@
 ﻿using GraphQL;
 using GraphQL.Types;
-using Graphql.AutoReflection.NetCore.Utilities;
+using Graphql.Reflection.NetCore.Utilities;
 using System;
 using System.Linq;
 
-namespace Graphql.AutoReflection.NetCore.Generic
+namespace Graphql.Reflection.NetCore.Generic
 {
     public class GenericInputType : InputObjectGraphType
     {

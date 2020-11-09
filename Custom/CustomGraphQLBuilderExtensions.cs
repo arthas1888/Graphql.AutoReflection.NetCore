@@ -8,7 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
-namespace Graphql.AutoReflection.NetCore.Custom
+namespace Graphql.Reflection.NetCore.Custom
 {
     public static class CustomGraphQLBuilderExtensions
     {
