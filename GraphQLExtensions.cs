@@ -1,7 +1,7 @@
 ﻿using GraphQL.Authorization;
 using GraphQL.Builders;
 using GraphQL.Types;
-using Graphql.Reflection.NetCore.Utilities;
+using SER.Graphql.Reflection.NetCore.Utilities;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -10,7 +10,7 @@ using System.Security.Claims;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-namespace Graphql.Reflection.NetCore
+namespace SER.Graphql.Reflection.NetCore
 {
     public static class GraphQLExtensions
     {

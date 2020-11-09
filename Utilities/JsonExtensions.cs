@@ -6,7 +6,7 @@ using System.IO;
 using System.Text;
 using System.Text.Json;
 
-namespace Graphql.Reflection.NetCore.Utilities
+namespace SER.Graphql.Reflection.NetCore.Utilities
 {
     public static partial class JsonExtensions
     {

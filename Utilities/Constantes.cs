@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Graphql.Reflection.NetCore.Utilities
+namespace SER.Graphql.Reflection.NetCore.Utilities
 {
     public class Constantes
     {

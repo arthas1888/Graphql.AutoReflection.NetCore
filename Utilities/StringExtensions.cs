@@ -7,7 +7,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Graphql.Reflection.NetCore.Utilities
+namespace SER.Graphql.Reflection.NetCore.Utilities
 {
     public static class StringExtensions
     {

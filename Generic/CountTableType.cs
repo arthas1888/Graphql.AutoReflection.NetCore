@@ -1,14 +1,14 @@
-﻿using Graphql.Reflection.NetCore.Generic;
-using Graphql.Reflection.NetCore.Models;
+﻿using SER.Graphql.Reflection.NetCore.Generic;
+using SER.Graphql.Reflection.NetCore.Models;
 using GraphQL.Types;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
 using System.Linq.Dynamic.Core;
 using System.Reflection;
-using Graphql.Reflection.NetCore.Utilities;
+using SER.Graphql.Reflection.NetCore.Utilities;
 
-namespace Graphql.Reflection.NetCore
+namespace SER.Graphql.Reflection.NetCore
 {
     public class CountTableType<T> : IntGraphType
     {

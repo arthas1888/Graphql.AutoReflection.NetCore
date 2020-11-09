@@ -9,17 +9,17 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
-using Graphql.Reflection.NetCore.Generic;
-using Graphql.Reflection.NetCore.Models;
+using SER.Graphql.Reflection.NetCore.Generic;
+using SER.Graphql.Reflection.NetCore.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
-using Graphql.Reflection.NetCore.Builder;
+using SER.Graphql.Reflection.NetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 
-namespace Graphql.Reflection.NetCore.Custom
+namespace SER.Graphql.Reflection.NetCore.Custom
 {
     public static class ServiceCollectionExtensions
     {

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Graphql.Reflection.NetCore.Generic
+namespace SER.Graphql.Reflection.NetCore.Generic
 {
     public class TableMetadata
     {

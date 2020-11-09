@@ -1,13 +1,13 @@
-﻿using Graphql.Reflection.NetCore.Generic;
-using Graphql.Reflection.NetCore.Models;
+﻿using SER.Graphql.Reflection.NetCore.Generic;
+using SER.Graphql.Reflection.NetCore.Models;
 using GraphQL.Types;
 using Microsoft.AspNetCore.Http;
 using System;
-using Graphql.Reflection.NetCore.Utilities;
+using SER.Graphql.Reflection.NetCore.Utilities;
 using System.Linq;
 using GraphQL.Authorization;
 
-namespace Graphql.Reflection.NetCore
+namespace SER.Graphql.Reflection.NetCore
 {
     public class AppMutation : ObjectGraphType<object>
     {

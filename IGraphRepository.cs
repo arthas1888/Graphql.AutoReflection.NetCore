@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Graphql.Reflection.NetCore
+namespace SER.Graphql.Reflection.NetCore
 {
     public interface IGraphRepository<T> where T : class
     {

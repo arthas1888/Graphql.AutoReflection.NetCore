@@ -1,4 +1,4 @@
-﻿using Graphql.Reflection.NetCore.Models;
+﻿using SER.Graphql.Reflection.NetCore.Models;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -7,7 +7,7 @@ using System.Linq.Expressions;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace Graphql.Reflection.NetCore.Utilities
+namespace SER.Graphql.Reflection.NetCore.Utilities
 {
     public static class  SqlCommandExt
     {

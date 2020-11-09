@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Graphql.Reflection.NetCore.Custom
+namespace SER.Graphql.Reflection.NetCore.Custom
 {
     //public class GraphQLSettings
     //{

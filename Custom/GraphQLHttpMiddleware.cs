@@ -23,7 +23,7 @@ using GraphQL.Execution;
 using System.Text;
 using GraphQL.DataLoader;
 
-namespace Graphql.Reflection.NetCore.Custom
+namespace SER.Graphql.Reflection.NetCore.Custom
 {
     public class GraphQLHttpMiddleware<TSchema>
         where TSchema : ISchema

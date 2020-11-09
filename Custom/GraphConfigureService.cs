@@ -9,7 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Graphql.Reflection.NetCore.Custom
+namespace SER.Graphql.Reflection.NetCore.Custom
 {
     public static class GraphConfigureService
     {

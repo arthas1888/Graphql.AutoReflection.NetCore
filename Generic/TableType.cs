@@ -1,5 +1,5 @@
-﻿using Graphql.Reflection.NetCore.Generic;
-using Graphql.Reflection.NetCore.Models;
+﻿using SER.Graphql.Reflection.NetCore.Generic;
+using SER.Graphql.Reflection.NetCore.Models;
 using GraphQL;
 using GraphQL.Types;
 using Microsoft.AspNetCore.Http;
@@ -10,12 +10,12 @@ using System.Linq;
 using System.Linq.Dynamic.Core;
 using System.Reflection;
 using Newtonsoft.Json;
-using Graphql.Reflection.NetCore.Utilities;
+using SER.Graphql.Reflection.NetCore.Utilities;
 using GraphQL.DataLoader;
 using NetTopologySuite.Geometries;
 using GraphQL.Resolvers;
 
-namespace Graphql.Reflection.NetCore
+namespace SER.Graphql.Reflection.NetCore
 {
     public class TableType<T> : ObjectGraphType<T>
     {

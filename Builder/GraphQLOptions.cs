@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Graphql.Reflection.NetCore.Builder
+namespace SER.Graphql.Reflection.NetCore.Builder
 {
     /// <summary>
     /// Provides various settings needed to configure

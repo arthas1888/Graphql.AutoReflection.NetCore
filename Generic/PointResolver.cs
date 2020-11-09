@@ -3,10 +3,10 @@ using GraphQL.Resolvers;
 using GraphQL.Types;
 using NetTopologySuite.Geometries;
 using Newtonsoft.Json;
-using Graphql.Reflection.NetCore.Utilities;
+using SER.Graphql.Reflection.NetCore.Utilities;
 using System;
 
-namespace Graphql.Reflection.NetCore.Generic
+namespace SER.Graphql.Reflection.NetCore.Generic
 {
     public class PointResolver : IFieldResolver
     {

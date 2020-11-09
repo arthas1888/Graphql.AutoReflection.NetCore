@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Graphql.Reflection.NetCore
+namespace SER.Graphql.Reflection.NetCore
 {
     class Program
     {
