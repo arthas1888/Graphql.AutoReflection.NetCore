@@ -69,8 +69,8 @@ namespace SER.Graphql.Reflection.NetCore.Custom
                 .AddDataLoader()
                 .AddGraphTypes(ServiceLifetime.Scoped);
 
-            var config = new GraphQLConfiguration(services);
-            config.UseDbContext<TContext>();
+            //var config = new GraphQLConfiguration(services);
+            //config.UseDbContext<TContext>();
 
             services.AddScoped<IGraphRepository<TUser>, GenericGraphRepository<TUser, TContext>>();
             services.AddScoped<IGraphRepository<TRole>, GenericGraphRepository<TRole, TContext>>();

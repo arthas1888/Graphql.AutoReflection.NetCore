@@ -9,6 +9,8 @@ using System.Linq;
 using Newtonsoft.Json.Linq;
 using SER.Graphql.Reflection.NetCore.Utilities;
 using SER.Graphql.Reflection.NetCore.Models;
+using Microsoft.Extensions.Options;
+using SER.Graphql.Reflection.NetCore.Builder;
 
 namespace SER.Graphql.Reflection.NetCore.Generic
 {
@@ -23,14 +25,16 @@ namespace SER.Graphql.Reflection.NetCore.Generic
         private readonly ITableNameLookup _tableNameLookup;
         private readonly IConfiguration _config;
         private IEnumerable<TableMetadata> _tables;
+        private readonly IOptionsMonitor<SERGraphQlOptions> _optionsDelegate;
 
         public DatabaseMetadata(
             ITableNameLookup tableNameLookup,
-            IConfiguration config)
+            IConfiguration config,
+            IOptionsMonitor<SERGraphQlOptions> optionsDelegate)
         {
             _config = config;
             _tableNameLookup = tableNameLookup;
-            //_databaseName = _dbContext.Database.GetDbConnection().Database; 
+            _optionsDelegate = optionsDelegate;
             if (_tables == null)
                 ReloadMetadata();
         }
@@ -48,7 +52,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
         {
             var metaTables = new List<TableMetadata>();
 
-            string SqlConnectionStr = _config.GetConnectionString("PsqlConnection");
+            string SqlConnectionStr = _optionsDelegate.CurrentValue.ConnectionString;
             var optionsBuilder = new DbContextOptionsBuilder<TContext>();
             optionsBuilder.UseNpgsql(SqlConnectionStr, o => o.UseNetTopologySuite());
             using DbContext _dbContext = (DbContext)Activator.CreateInstance(typeof(TContext), new object[] { optionsBuilder.Options });

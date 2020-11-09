@@ -22,6 +22,8 @@ using SER.Graphql.Reflection.NetCore.Generic;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.Extensions.Options;
+using SER.Graphql.Reflection.NetCore.Builder;
 
 namespace SER.Graphql.Reflection.NetCore
 {
@@ -45,12 +47,14 @@ namespace SER.Graphql.Reflection.NetCore
                         && level == LogLevel.Information)
                 .AddConsole();
         });
+        private readonly IOptionsMonitor<SERGraphQlOptions> _optionsDelegate;
 
         public GenericGraphRepository(TContext db,
             IHttpContextAccessor httpContextAccessor,
             FillDataExtensions fillDataExtensions,
             IDataLoaderContextAccessor dataLoader,
-            IConfiguration config)
+            IConfiguration config,
+            IOptionsMonitor<SERGraphQlOptions> optionsDelegate)
         {
             _context = db;
             _config = config;
@@ -61,7 +65,7 @@ namespace SER.Graphql.Reflection.NetCore
             _logger = _httpContextAccessor.HttpContext.RequestServices.GetService<ILogger<GenericGraphRepository<T, TContext>>>();
             _fillDataExtensions = fillDataExtensions;
             _dataLoader = dataLoader;
-
+            _optionsDelegate = optionsDelegate;
         }
 
         public string GetCompanyIdUser()
@@ -223,7 +227,7 @@ namespace SER.Graphql.Reflection.NetCore
             var args = new List<object>();
             var orderBy = context.GetArgument<string>("orderBy");
 
-            string SqlConnectionStr = _config.GetConnectionString("PsqlConnection");
+            string SqlConnectionStr = _optionsDelegate.CurrentValue.ConnectionString;
             var optionsBuilder = new DbContextOptionsBuilder<TContext>();
             optionsBuilder.UseNpgsql(SqlConnectionStr, o => o.UseNetTopologySuite());
             optionsBuilder.EnableSensitiveDataLogging();

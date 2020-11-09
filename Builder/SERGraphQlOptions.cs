@@ -6,31 +6,42 @@ using System.Text;
 
 namespace SER.Graphql.Reflection.NetCore.Builder
 {
-    public class GraphQLConfiguration
+    /// <summary>
+    /// Provides various settings needed to configure
+    /// the Graphql auto reflection integration.
+    /// </summary>
+    public class SERGraphQlOptions
     {
         /// <summary>
-        /// Initializes a new instance
+        /// Gets the services collection.
         /// </summary>
-        /// <param name="services">The services collection.</param>
-        public GraphQLConfiguration(IServiceCollection services)
-            => Services = services ?? throw new ArgumentNullException(nameof(services));
+        public IServiceCollection Services { get; set; }
+
+        /// <summary>
+        /// Gets or sets the concrete type of the <see cref="DbContext"/> used by the
+        /// Graphql auto reflection stores. If this property is not populated,
+        /// an exception is thrown at runtime when trying to use the stores.
+        /// </summary>
+        public Type DbContextType { get; set; }
+        public string ConnectionString { get; set; }
 
         /// <summary>
         /// Configures the GraphQL.Reflection Entity Framework Core stores to use the specified database context type.
         /// </summary>
         /// <typeparam name="TContext">The type of the <see cref="DbContext"/> used by GraphQL.Reflection.</typeparam>
         /// <returns>The <see cref="GraphQLConfiguration"/>.</returns>
-        public GraphQLConfiguration UseDbContext<TContext>()
+        public SERGraphQlOptions UseDbContext<TContext>(IServiceCollection services)
             where TContext : DbContext
-            => UseDbContext(typeof(TContext));
+            => UseDbContext(typeof(TContext), services);
 
         /// <summary>
         /// Configures the GraphQL.Reflection Entity Framework Core stores to use the specified database context type.
         /// </summary>
         /// <param name="type">The type of the <see cref="DbContext"/> used by GraphQL.Reflection.</param>
         /// <returns>The <see cref="GraphQLConfiguration"/>.</returns>
-        public GraphQLConfiguration UseDbContext(Type type)
+        public SERGraphQlOptions UseDbContext(Type type, IServiceCollection services)
         {
+            Services = services ?? throw new ArgumentNullException(nameof(services));
             if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
@@ -44,10 +55,7 @@ namespace SER.Graphql.Reflection.NetCore.Builder
             return Configure(options => options.DbContextType = type);
         }
 
-        /// <summary>
-        /// Gets the services collection.
-        /// </summary>
-        public IServiceCollection Services { get; }
+
 
         /// <summary>
         /// Amends the default GraphQL.Reflection Entity Framework Core configuration.
@@ -55,7 +63,7 @@ namespace SER.Graphql.Reflection.NetCore.Builder
         /// <param name="configuration">The delegate used to configure the GraphQL.Reflection options.</param>
         /// <remarks>This extension can be safely called multiple times.</remarks>
         /// <returns>The <see cref="GraphQLConfiguration"/>.</returns>
-        public GraphQLConfiguration Configure(Action<SERGraphQlOptions> configuration)
+        public SERGraphQlOptions Configure(Action<SERGraphQlOptions> configuration)
         {
             if (configuration is null)
             {
@@ -66,7 +74,5 @@ namespace SER.Graphql.Reflection.NetCore.Builder
 
             return this;
         }
-
-      
     }
 }

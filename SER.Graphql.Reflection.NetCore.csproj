@@ -4,9 +4,12 @@
 		<OutputType>Exe</OutputType>
 		<TargetFramework>netcoreapp3.1</TargetFramework>
 		<Company>SER Soluciones</Company>
-		<Version>0.10.0</Version>
+		<Version>0.11.0</Version>
 		<AssemblyName>SER.Graphql.Reflection.NetCore</AssemblyName>
 		<RootNamespace>SER.Graphql.Reflection.NetCore</RootNamespace>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<Description>This is a complement to graphql-dotnet (https://github.com/graphql-dotnet/graphql-dotnet) to avoid boilerplate
+</Description>
 	</PropertyGroup>
 	<ItemGroup>
 
