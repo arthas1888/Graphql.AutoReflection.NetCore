@@ -27,9 +27,12 @@ using SER.Graphql.Reflection.NetCore.Builder;
 
 namespace SER.Graphql.Reflection.NetCore
 {
-    public class GenericGraphRepository<T, TContext> : IGraphRepository<T>
+    public class GenericGraphRepository<T, TContext, TUser, TRole, TUserRole> : IGraphRepository<T>
             where T : class
             where TContext : DbContext
+            where TUser : class
+            where TRole : class
+            where TUserRole : class
     {
         private readonly TContext _context;
         private readonly IHttpContextAccessor _httpContextAccessor;
@@ -62,7 +65,7 @@ namespace SER.Graphql.Reflection.NetCore
             model = typeof(T).Name;
             nameModel = typeof(T).Name.ToSnakeCase().ToLower();
             _cache = _httpContextAccessor.HttpContext.RequestServices.GetService<IMemoryCache>();
-            _logger = _httpContextAccessor.HttpContext.RequestServices.GetService<ILogger<GenericGraphRepository<T, TContext>>>();
+            _logger = _httpContextAccessor.HttpContext.RequestServices.GetService<ILogger<GenericGraphRepository<T, TContext, TUser, TRole, TUserRole>>>();
             _fillDataExtensions = fillDataExtensions;
             _dataLoader = dataLoader;
             _optionsDelegate = optionsDelegate;
@@ -112,7 +115,8 @@ namespace SER.Graphql.Reflection.NetCore
             if (!string.IsNullOrEmpty(whereArgs) && args.Length > 0)
                 query = query.Where(whereArgs, args);
 
-            query = FilterQueryByCompany(query, out _);
+            if (_optionsDelegate.CurrentValue.EnableCustomFilter)
+                query = FilterQueryByCompany(query, out _);
 
             if (!string.IsNullOrEmpty(orderBy))
                 query = query.OrderBy(orderBy);
@@ -157,19 +161,23 @@ namespace SER.Graphql.Reflection.NetCore
             }
             if (!string.IsNullOrEmpty(whereArgs) && args.Length > 0)
                 query = query.Where(whereArgs, args);
-            query = FilterQueryByCompany(query, out _);
+
+            if (_optionsDelegate.CurrentValue.EnableCustomFilter)
+                query = FilterQueryByCompany(query, out _);
             return query.Count();
         }
 
         private IQueryable<T> FilterQueryByCompany(IQueryable<T> query, out bool find, Type parentType = null, string columnName = "")
         {
+            string nameField = _optionsDelegate.CurrentValue.NameCustomFilter;
             find = false;
             string companyId = null;
             var types = new Dictionary<string, Type>();
             var typeToEvaluate = typeof(T);
             if (parentType != null) typeToEvaluate = parentType;
 
-            //Console.WriteLine($"Name {_httpContextAccessor.HttpContext.User.Identity.Name} IsAuthenticated {_httpContextAccessor.HttpContext.User.Identity.IsAuthenticated}");
+            //Console.WriteLine($"Name {_httpContextAccessor.HttpContext.User.Identity.Name} IsAuthenticated {_httpContextAccessor.HttpContext.User.Identity.IsAuthenticated}" +
+            //    $" GetCompanyIdUser() { GetCompanyIdUser()}");
             foreach (var propertyInfo in typeToEvaluate.GetProperties())
             {
                 var field = propertyInfo.PropertyType;
@@ -192,16 +200,16 @@ namespace SER.Graphql.Reflection.NetCore
                     }
 
 
-                if (propertyInfo.Name == "company_id" || propertyInfo.Name == "CompanyId")
+                if (propertyInfo.Name == nameField)
                 {
                     find = true;
                     if (_httpContextAccessor.HttpContext.User.Identity.IsAuthenticated && !string.IsNullOrEmpty(_httpContextAccessor.HttpContext.User.Identity.Name))
                         companyId = GetCompanyIdUser();
                     else
-                        companyId = _httpContextAccessor.HttpContext.Session?.GetInt32("company_id")?.ToString();
+                        companyId = _httpContextAccessor.HttpContext.Session?.GetInt32(nameField)?.ToString();
 
-                    if (propertyInfo.Name == "CompanyId") query = query.Where($"{columnName}CompanyId  = @0 OR {columnName}CompanyId  == null", companyId);
-                    else query = query.Where($"{columnName}company_id  = @0 OR {columnName}company_id  == null", companyId);
+                    // if (propertyInfo.Name == "CompanyId") query = query.Where($"{columnName}CompanyId  = @0 OR {columnName}CompanyId  == null", companyId);
+                    query = query.Where($"{columnName}{nameField}  = @0 OR {columnName}{nameField}  == null", companyId);
                     break;
                 }
             }
@@ -238,7 +246,7 @@ namespace SER.Graphql.Reflection.NetCore
             IQueryable<T> query = _dbContext.Set<T>();
 
             List<string> includeExpressions = new List<string>();
-            GraphUtils.DetectChild(context.FieldAst.SelectionSet.Selections, includeExpressions,
+            GraphUtils.DetectChild<TUser, TRole, TUserRole>(context.FieldAst.SelectionSet.Selections, includeExpressions,
                    ((dynamic)context.FieldDefinition.ResolvedType).ResolvedType, args, whereArgs,
                    arguments: context.Arguments, mainType: typeof(T));
 
@@ -259,7 +267,8 @@ namespace SER.Graphql.Reflection.NetCore
             _logger.LogWarning($"whereArgs: {whereArgs}");
             query = query.Where(whereArgs.ToString(), args.ToArray());
 
-            query = FilterQueryByCompany(query, out _);
+            if (_optionsDelegate.CurrentValue.EnableCustomFilter)
+                query = FilterQueryByCompany(query, out _);
 
             if (!string.IsNullOrEmpty(orderBy))
                 query = query.OrderBy(orderBy);

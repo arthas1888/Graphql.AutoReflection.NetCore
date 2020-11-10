@@ -29,6 +29,6 @@ namespace SER.Graphql.Reflection.NetCore.Utilities
     public class CustomClaimTypes
     {
         public const string Permission = "http://ngcore/claims/permission";
-        public const string CompanyId = "http://ngcore/claims/owner_id";
+        public const string CompanyId = "company_id";
     }
 }

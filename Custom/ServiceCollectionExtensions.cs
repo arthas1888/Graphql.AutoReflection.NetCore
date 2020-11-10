@@ -23,11 +23,26 @@ namespace SER.Graphql.Reflection.NetCore.Custom
 {
     public static class ServiceCollectionExtensions
     {
+        public static void AddConfigGraphQl<TContext>(this IServiceCollection services)
+          where TContext : DbContext
+           => AddConfigGraphQl<TContext, object, object, object>(services);
+
+        public static void AddConfigGraphQl<TContext, TUser>(this IServiceCollection services)
+          where TContext : DbContext
+          where TUser : class
+           => AddConfigGraphQl<TContext, TUser, object, object>(services);
+
+        public static void AddConfigGraphQl<TContext, TUser, TRole>(this IServiceCollection services)
+           where TContext : DbContext
+           where TUser : class
+           where TRole : class
+            => AddConfigGraphQl<TContext, TUser, TRole, object>(services);
+
         public static void AddConfigGraphQl<TContext, TUser, TRole, TUserRole>(this IServiceCollection services)
-            where TContext : DbContext
-            where TUser : class
-            where TRole : class
-            where TUserRole : class
+        where TContext : DbContext
+        where TUser : class
+        where TRole : class
+        where TUserRole : class
         {
             services.AddSingleton<IDocumentExecuter, DocumentExecuter>();
             services.AddSingleton<ITableNameLookup, TableNameLookup>();
@@ -37,9 +52,9 @@ namespace SER.Graphql.Reflection.NetCore.Custom
             services.AddSingleton<IDataLoaderContextAccessor, DataLoaderContextAccessor>();
             services.AddSingleton<DataLoaderDocumentListener>();
 
-            services.AddScoped<GraphQLQuery>();
+            services.AddScoped<GraphQLQuery<TUser, TRole, TUserRole>>();
             services.AddScoped<FillDataExtensions>();
-            services.AddScoped<ISchema, AppSchema>();
+            services.AddScoped<ISchema, AppSchema<TUser, TRole, TUserRole>>();
 
             //permissions
             services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
@@ -69,17 +84,23 @@ namespace SER.Graphql.Reflection.NetCore.Custom
                 .AddDataLoader()
                 .AddGraphTypes(ServiceLifetime.Scoped);
 
-            //var config = new GraphQLConfiguration(services);
-            //config.UseDbContext<TContext>();
+            var config = new GraphQLConfiguration(services);
+            config.UseDbContext<TContext>();
 
-            services.AddScoped<IGraphRepository<TUser>, GenericGraphRepository<TUser, TContext>>();
-            services.AddScoped<IGraphRepository<TRole>, GenericGraphRepository<TRole, TContext>>();
-            services.AddScoped<IGraphRepository<TUserRole>, GenericGraphRepository<TUserRole, TContext>>();
-            services.AddScoped<IGraphRepository<IdentityRoleClaim<string>>, GenericGraphRepository<IdentityRoleClaim<string>, TContext>>();
-            AddScopedModelsDynamic<TContext>(services);
+            if (typeof(IdentityUser).IsAssignableFrom(typeof(TUser)))
+                services.AddScoped<IGraphRepository<TUser>, GenericGraphRepository<TUser, TContext, TUser, TRole, TUserRole>>();
+
+            if (typeof(IdentityRole).IsAssignableFrom(typeof(TRole)))
+                services.AddScoped<IGraphRepository<TRole>, GenericGraphRepository<TRole, TContext, TUser, TRole, TUserRole>>();
+
+            if (typeof(IdentityUserRole<>).IsAssignableFrom(typeof(TUserRole)))
+                services.AddScoped<IGraphRepository<TUserRole>, GenericGraphRepository<TUserRole, TContext, TUser, TRole, TUserRole>>();
+
+            services.AddScoped<IGraphRepository<IdentityRoleClaim<string>>, GenericGraphRepository<IdentityRoleClaim<string>, TContext, TUser, TRole, TUserRole>>();
+            AddScopedModelsDynamic<TContext, TUser, TRole, TUserRole>(services);
         }
 
-        public static void AddScopedModelsDynamic<TContext>(this IServiceCollection services)
+        public static void AddScopedModelsDynamic<TContext, TUser, TRole, TUserRole>(this IServiceCollection services)
              where TContext : DbContext
         {
             var assembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(x => x.GetName().Name == typeof(TContext).Assembly.GetName().Name);
@@ -89,7 +110,8 @@ namespace SER.Graphql.Reflection.NetCore.Custom
                 .Where(x => !x.IsAbstract && typeof(IBaseModel).IsAssignableFrom(x)))
             {
                 var interfaceType = typeof(IGraphRepository<>).MakeGenericType(new Type[] { type });
-                var inherateType = typeof(GenericGraphRepository<,>).MakeGenericType(new Type[] { type, typeof(TContext) });
+                var inherateType = typeof(GenericGraphRepository<,,,,>).MakeGenericType(new Type[] { type, typeof(TContext),
+                    typeof(TContext),typeof(TContext), typeof(TContext)});
                 ServiceLifetime serviceLifetime = ServiceLifetime.Scoped;
                 // Console.WriteLine($"Dependencia IGraphRepository registrada type {type.Name}");
                 services.TryAdd(new ServiceDescriptor(interfaceType, inherateType, serviceLifetime));

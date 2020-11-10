@@ -14,6 +14,8 @@ using SER.Graphql.Reflection.NetCore.Utilities;
 using GraphQL.DataLoader;
 using NetTopologySuite.Geometries;
 using GraphQL.Resolvers;
+using Microsoft.Extensions.Options;
+using SER.Graphql.Reflection.NetCore.Builder;
 
 namespace SER.Graphql.Reflection.NetCore
 {
@@ -40,6 +42,7 @@ namespace SER.Graphql.Reflection.NetCore
             _dbMetadata = dbMetadata;
             _accessor = accessor;
             _httpContextAccessor = httpContextAccessor;
+
             var permission = mainTable.Type.Name.ToLower();
             var friendlyTableName = _tableNameLookup.GetFriendlyName(mainTable.TableName);
             if (crud)
@@ -68,7 +71,7 @@ namespace SER.Graphql.Reflection.NetCore
                 queryThirdArguments.Add(new QueryArgument<StringGraphType> { Name = "all" });
                 queryThirdArguments.Add(new QueryArgument<BooleanGraphType> { Name = "join" });
 
-                var listObjectGraph = GetInternalListInstances(parentType, mainTableColumn, queryThirdArguments: queryThirdArguments);
+                var listObjectGraph = GetInternalListInstances(mainTableColumn, queryThirdArguments: queryThirdArguments);
 
                 var inherateType = typeof(CustomListResolver<>).MakeGenericType(new Type[] { mainTableColumn.Type });
                 dynamic resolver = Activator.CreateInstance(inherateType, new object[] { mainTableColumn.Type, parentType, _httpContextAccessor, _accessor });
@@ -133,32 +136,19 @@ namespace SER.Graphql.Reflection.NetCore
 
         }
 
-        private void InitGraphTableColumn(Type parentType, ColumnMetadata columnMetadata, dynamic objectGraphType, QueryArguments queryArguments)
+        private void InitGraphTableColumn(ColumnMetadata columnMetadata, dynamic objectGraphType, QueryArguments queryArguments)
         {
-            if (typeof(IBaseModel).IsAssignableFrom(columnMetadata.Type)
-                    || Constantes.SystemTablesSingular.Contains(columnMetadata.Type.Name))
-            {
-                var queryThirdArguments = new QueryArguments();
-                queryThirdArguments.Add(new QueryArgument<StringGraphType> { Name = "all" });
-                var metaTable = _dbMetadata.GetTableMetadatas().FirstOrDefault(x => x.Type.Name == columnMetadata.Type.Name);
-                var tableType = GetThirdGraphType(metaTable, columnMetadata, queryThirdArguments);
-
-                objectGraphType.AddField(new FieldType
-                {
-                    Name = $"{columnMetadata.ColumnName}",
-                    ResolvedType = tableType,
-                    Arguments = queryThirdArguments
-                });
-            }
             // incluye listas de cada objeto
-            else if (columnMetadata.IsList)
+            if (columnMetadata.IsList)
             {
                 try
                 {
-                    var queryThirdArguments = new QueryArguments();
-                    queryThirdArguments.Add(new QueryArgument<StringGraphType> { Name = "all" });
+                    var queryThirdArguments = new QueryArguments
+                    {
+                        new QueryArgument<StringGraphType> { Name = "all" }
+                    };
 
-                    var listObjectGraph = GetInternalListInstances(parentType, columnMetadata, queryThirdArguments: queryThirdArguments);
+                    var listObjectGraph = GetInternalListInstances(columnMetadata, queryThirdArguments: queryThirdArguments);
 
                     objectGraphType.AddField(new FieldType
                     {
@@ -176,6 +166,23 @@ namespace SER.Graphql.Reflection.NetCore
                     );
                     FillArguments(queryArguments, columnMetadata.ColumnName, columnMetadata.Type);
                 }
+            }
+            else if (typeof(IBaseModel).IsAssignableFrom(columnMetadata.Type)
+                    || Constantes.SystemTablesSingular.Contains(columnMetadata.Type.Name))
+            {
+                var queryThirdArguments = new QueryArguments
+                {
+                    new QueryArgument<StringGraphType> { Name = "all" }
+                };
+                var metaTable = _dbMetadata.GetTableMetadatas().FirstOrDefault(x => x.Type.Name == columnMetadata.Type.Name);
+                var tableType = GetThirdGraphType(metaTable, columnMetadata, queryThirdArguments);
+
+                objectGraphType.AddField(new FieldType
+                {
+                    Name = $"{columnMetadata.ColumnName}",
+                    ResolvedType = tableType,
+                    Arguments = queryThirdArguments
+                });
             }
             else if (columnMetadata.Type == typeof(TimeSpan))
             {
@@ -216,7 +223,7 @@ namespace SER.Graphql.Reflection.NetCore
             });
         }
 
-        private ListGraphType<ObjectGraphType> GetInternalListInstances(Type parentType, ColumnMetadata columnMetadata,
+        private ListGraphType<ObjectGraphType> GetInternalListInstances(ColumnMetadata columnMetadata,
             QueryArguments queryThirdArguments = null)
         {
             var metaTable = _dbMetadata.GetTableMetadatas().FirstOrDefault(x => x.Type.Name == columnMetadata.Type.Name);
@@ -225,8 +232,10 @@ namespace SER.Graphql.Reflection.NetCore
             if (!_tableNameLookup.ExistListGraphType(columnMetadata.ColumnName))
             {
                 var tableType = GetSecondGraphType(columnMetadata, queryThirdArguments, metaTable);
-                listGraphType = new ListGraphType<ObjectGraphType>();
-                listGraphType.ResolvedType = tableType;
+                listGraphType = new ListGraphType<ObjectGraphType>
+                {
+                    ResolvedType = tableType
+                };
                 // Field<ListGraphType<CityType>>(nameof(State.cities));
             }
             else
@@ -269,7 +278,7 @@ namespace SER.Graphql.Reflection.NetCore
                 //}
                 foreach (var tableColumn in metaTable.Columns)
                 {
-                    InitGraphTableColumn(metaTable.Type, tableColumn, objectGraphType, queryArguments);
+                    InitGraphTableColumn(tableColumn, objectGraphType, queryArguments);
                 }
             }
             else
@@ -300,10 +309,68 @@ namespace SER.Graphql.Reflection.NetCore
 
                 foreach (var tableColumn in metaTable.Columns)
                 {
-                    objectGraphInternal.Field(
-                      GraphUtils.ResolveGraphType(tableColumn.Type),
-                        tableColumn.ColumnName
-                    );
+                    if (tableColumn.IsList)
+                    {
+                        try
+                        {
+                            var queryThirdArguments = new QueryArguments
+                            {
+                                new QueryArgument<StringGraphType> { Name = "all" }
+                            };
+                            var metaTableInherit = _dbMetadata.GetTableMetadatas().FirstOrDefault(x => x.Type.Name == tableColumn.Type.Name);
+                            var listObjectGraph = GetFourthGraphType(metaTableInherit, tableColumn, queryThirdArguments, isList: true);
+
+                            objectGraphInternal.AddField(new FieldType
+                            {
+                                Name = $"{tableColumn.ColumnName}",
+                                ResolvedType = listObjectGraph,
+                                Arguments = queryThirdArguments
+                            });
+                        }
+                        catch (Exception e)
+                        {
+                            Console.WriteLine(e.ToString());
+                            objectGraphInternal.Field(
+                              GraphUtils.ResolveGraphType(tableColumn.Type),
+                                columnMetadata.ColumnName
+                            );
+                            FillArguments(queryArguments, tableColumn.ColumnName, tableColumn.Type);
+                        }
+                    }
+                    else if (typeof(IBaseModel).IsAssignableFrom(tableColumn.Type)
+                        || Constantes.SystemTablesSingular.Contains(tableColumn.Type.Name))
+                    {
+                        var queryThirdArguments = new QueryArguments
+                        {
+                            new QueryArgument<StringGraphType> { Name = "all" }
+                        };
+                        var metaTableInherit = _dbMetadata.GetTableMetadatas().FirstOrDefault(x => x.Type.Name == tableColumn.Type.Name);
+                        var tableType = GetFourthGraphType(metaTableInherit, tableColumn, queryThirdArguments);
+
+                        objectGraphInternal.AddField(new FieldType
+                        {
+                            Name = $"{tableColumn.ColumnName}",
+                            ResolvedType = tableType,
+                            Arguments = queryThirdArguments
+                        });
+                    }
+                    else if (tableColumn.Type == typeof(TimeSpan))
+                    {
+                        objectGraphInternal.AddField(
+                            new FieldType
+                            {
+                                Type = typeof(string).GetGraphTypeFromType(true),
+                                Name = tableColumn.ColumnName,
+                                Resolver = new TimeSpanResolver(tableColumn.ColumnName)
+                            }
+                       );
+                        FillArguments(queryArguments, tableColumn.ColumnName, tableColumn.Type);
+                    }
+                    else
+                        objectGraphInternal.Field(
+                          GraphUtils.ResolveGraphType(tableColumn.Type),
+                            tableColumn.ColumnName
+                        );
                     FillArguments(queryArguments, tableColumn.ColumnName, tableColumn.Type);
                 }
             }
@@ -314,6 +381,60 @@ namespace SER.Graphql.Reflection.NetCore
                     FillArguments(queryArguments, tableColumn.ColumnName, tableColumn.Type);
                 }
             }
+            return _tableNameLookup.GetOrInsertGraphType(key, objectGraphInternal);
+        }
+
+        private dynamic GetFourthGraphType(TableMetadata metaTable, ColumnMetadata columnMetadata, QueryArguments queryArguments, bool isList = false)
+        {
+            string key = $"Fourth_{columnMetadata.Type.Name}";
+            dynamic objectGraphInternal = null;
+            ListGraphType<ObjectGraphType> listGraphType = null;
+
+            if ((isList && !_tableNameLookup.ExistListGraphType(key + "_list")) || (!isList && !_tableNameLookup.ExistGraphType(key)))
+            {
+                var inherateType = typeof(ObjectGraphType<>).MakeGenericType(new Type[] { metaTable.Type });
+                objectGraphInternal = Activator.CreateInstance(inherateType);
+                objectGraphInternal.Name = key;
+
+                if (isList)
+                {
+                    listGraphType = new ListGraphType<ObjectGraphType>
+                    {
+                        ResolvedType = objectGraphInternal
+                    };
+                }
+
+                foreach (var tableColumn in metaTable.Columns)
+                {
+                    if (tableColumn.Type == typeof(TimeSpan))
+                    {
+                        objectGraphInternal.AddField(
+                            new FieldType
+                            {
+                                Type = typeof(string).GetGraphTypeFromType(true),
+                                Name = tableColumn.ColumnName,
+                                Resolver = new TimeSpanResolver(tableColumn.ColumnName)
+                            }
+                       );
+                        FillArguments(queryArguments, tableColumn.ColumnName, tableColumn.Type);
+                    }
+                    else
+                        objectGraphInternal.Field(
+                          GraphUtils.ResolveGraphType(tableColumn.Type),
+                            tableColumn.ColumnName
+                        );
+                    FillArguments(queryArguments, tableColumn.ColumnName, tableColumn.Type);
+                }
+            }
+            else
+            {
+                foreach (var tableColumn in metaTable.Columns)
+                {
+                    FillArguments(queryArguments, tableColumn.ColumnName, tableColumn.Type);
+                }
+            }
+            if (isList)
+                return _tableNameLookup.GetOrInsertListGraphType(key + "_list", listGraphType);
             return _tableNameLookup.GetOrInsertGraphType(key, objectGraphInternal);
         }
 

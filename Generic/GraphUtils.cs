@@ -10,6 +10,7 @@ using SER.Graphql.Reflection.NetCore.Models;
 using GraphQL;
 using GraphQL.Language.AST;
 using GraphQL.Types;
+using Microsoft.AspNetCore.Identity;
 
 namespace SER.Graphql.Reflection.NetCore.Generic
 {
@@ -194,8 +195,11 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                 expresion.Append(")");
         }
 
-        public static void DetectChild(IList<ISelection> selections, List<string> includes, dynamic resolvedType, List<object> args,
+        public static void DetectChild<TUser, TRole, TUserRole>(IList<ISelection> selections, List<string> includes, dynamic resolvedType, List<object> args,
             StringBuilder whereArgs, string mainModel = "", IDictionary<string, object> arguments = null, Type mainType = null)
+            where TUser : class
+            where TRole : class
+            where TUserRole : class
         {
             var model = string.Empty;
             Type innerType = null;
@@ -217,7 +221,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                     }
                     else
                     {
-                        FilterArguments(argument.Key, argument.Value, type, i, args, whereArgs);
+                        FilterArguments<TUser, TRole, TUserRole>(argument.Key, argument.Value, type, i, args, whereArgs);
                         i++;
                     }
                 }
@@ -230,10 +234,11 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                     if (field.SelectionSet.Selections.Count > 0)
                     {
                         model = field.Name;
-                        //if (mainType == typeof(ApplicationUser) || mainType == typeof(ApplicationRole) || mainType == typeof(ApplicationUserRole))
-                        //    model = FirstLetterToUpper(model);
-                        //if (model == "user") model = "User";
-                        //if (model == "userRoles") model = "UserRoles";
+                        if ((mainType == typeof(TUser) && typeof(IdentityUser).IsAssignableFrom(typeof(TUser)))
+                            || (mainType == typeof(TRole) && typeof(IdentityRole).IsAssignableFrom(typeof(TRole)))
+                            || (mainType == typeof(TUserRole) && typeof(IdentityUserRole<>).IsAssignableFrom(typeof(TUserRole)))
+                            )
+                            model = FirstLetterToUpper(model);
 
                         try
                         {
@@ -278,7 +283,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                                 else
                                 {
                                     if (innerType != null)
-                                        FilterArguments(argument.Name, argument.Value.Value, innerType, i, args, whereArgs, alias: headerModel);
+                                        FilterArguments<TUser, TRole, TUserRole>(argument.Name, argument.Value.Value, innerType, i, args, whereArgs, alias: headerModel);
                                     i++;
                                 }
                             }
@@ -303,7 +308,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                                     else
                                     {
                                         if (innerType != null)
-                                            FilterArguments(argument.Name, argument.Value.Value, innerType, i, args, whereArgs,
+                                            FilterArguments<TUser, TRole, TUserRole>(argument.Name, argument.Value.Value, innerType, i, args, whereArgs,
                                                 isList: true, alias: $"{model}.Any(");
                                         i++;
                                     }
@@ -321,7 +326,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                             }
                             catch (Exception) { }
                         }
-                        DetectChild(field.SelectionSet.Selections, includes, innerResolvedType, args, whereArgs, mainModel: model, mainType: innerType);
+                        DetectChild<TUser, TRole, TUserRole>(field.SelectionSet.Selections, includes, innerResolvedType, args, whereArgs, mainModel: model, mainType: innerType);
                     }
                 }
             }
@@ -338,8 +343,11 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             return str.ToUpper();
         }
 
-        private static void FilterArguments(string key, object value,
+        private static void FilterArguments<TUser, TRole, TUserRole>(string key, object value,
              Type type, int i, List<object> args, StringBuilder whereArgs, bool isList = false, string alias = null)
+            where TUser : class
+            where TRole : class
+            where TUserRole : class
         {
             if (key.Contains("__model__")) key = key.Replace("__model__", ".");
             if (key.Contains("__list__")) { key = key.Replace("__list__", ".Any("); isList = true; }
@@ -373,9 +381,11 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                 if (matchIsEnum.Success)
                     fieldName = Regex.Replace(fieldName, patternEnum, "");
 
-
-                //if (type == typeof(ApplicationUser) || type == typeof(ApplicationRole) || type == typeof(ApplicationUserRole))
-                //    fieldName = FirstLetterToUpper(fieldName);
+                if ((type == typeof(TUser) && typeof(IdentityUser).IsAssignableFrom(typeof(TUser)))
+                    || (type == typeof(TRole) && typeof(IdentityRole).IsAssignableFrom(typeof(TRole)))
+                    || (type == typeof(TUserRole) && typeof(IdentityUserRole<>).IsAssignableFrom(typeof(TUserRole)))
+                    )
+                    fieldName = FirstLetterToUpper(fieldName);
 
                 foreach (var (propertyInfo, j) in type.GetProperties().Select((v, j) => (v, j)))
                 {

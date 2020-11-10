@@ -10,6 +10,9 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+using SER.Graphql.Reflection.NetCore.Builder;
+using Microsoft.AspNetCore.Identity;
 
 namespace SER.Graphql.Reflection.NetCore.Generic
 {
@@ -21,7 +24,10 @@ namespace SER.Graphql.Reflection.NetCore.Generic
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IDataLoaderContextAccessor _accessor;
 
-        public CustomListResolver(Type dataType, Type parentType, IHttpContextAccessor httpContextAccessor, IDataLoaderContextAccessor accessor)
+        public CustomListResolver(Type dataType, 
+            Type parentType, 
+            IHttpContextAccessor httpContextAccessor, 
+            IDataLoaderContextAccessor accessor)
         {
             _dataType = dataType;
             _mainTable = parentType.Name;
@@ -55,7 +61,6 @@ namespace SER.Graphql.Reflection.NetCore.Generic
         {
             Type graphRepositoryType = typeof(IGraphRepository<>).MakeGenericType(new Type[] { _dataType });
             dynamic service = _httpContextAccessor.HttpContext.RequestServices.GetService(graphRepositoryType);
-
             var first = context.GetArgument<int?>("first");
             Task<IEnumerable<T>> res = null;
             try
@@ -74,12 +79,18 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                     res = loader.LoadAsync(((IBaseModel)context.Source).id);
 
                 }
-                else // if (context.Source is ApplicationUser || context.Source is ApplicationRole)
+                else if (context.Source is IdentityUser)
                 {
                     //var accesor = _httpContextAccessor.HttpContext.RequestServices.GetService<IDataLoaderContextAccessor>();
                     var loader = _accessor.Context.GetOrAddCollectionBatchLoader<string, T>($"GetItemsByIds",
                         (ids) => service.GetItemsByIds(ids, context, param, isString: true));
-                    res = loader.LoadAsync("Id");
+                    res = loader.LoadAsync((context.Source as IdentityUser).Id);
+                }
+                else if (context.Source is IdentityRole)
+                {
+                    var loader = _accessor.Context.GetOrAddCollectionBatchLoader<string, T>($"GetItemsByIds",
+                        (ids) => service.GetItemsByIds(ids, context, param, isString: true));
+                    res = loader.LoadAsync((context.Source as IdentityRole).Id);
                 }
 
                 if (first.HasValue && first.Value > 0)

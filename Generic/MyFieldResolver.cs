@@ -11,15 +11,20 @@ using System.Linq;
 using System.Text;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+using SER.Graphql.Reflection.NetCore.Builder;
 
 namespace SER.Graphql.Reflection.NetCore.Generic
 {
-    public class MyFieldResolver : IFieldResolver
+    public class MyFieldResolver<TUser, TRole, TUserRole> : IFieldResolver
+        where TUser : class
+        where TRole : class
+        where TUserRole : class
     {
         private TableMetadata _tableMetadata;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly FillDataExtensions _fillDataExtensions;
-        private readonly ILogger _logger;
+        private readonly ILogger _logger;        
 
         public MyFieldResolver(TableMetadata tableMetadata,
             FillDataExtensions fillDataExtensions,
@@ -28,7 +33,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             _tableMetadata = tableMetadata;
             _httpContextAccessor = httpContextAccessor;
             _fillDataExtensions = fillDataExtensions;
-            _logger = _httpContextAccessor.HttpContext.RequestServices.GetService<ILogger<MyFieldResolver>>();
+            _logger = _httpContextAccessor.HttpContext.RequestServices.GetService<ILogger<MyFieldResolver<TUser, TRole, TUserRole>>>();
         }
 
         public object Resolve(IResolveFieldContext context)
@@ -47,7 +52,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
 
                 if (context.FieldName.Contains("_list"))
                 {
-                    GraphUtils.DetectChild(context.FieldAst.SelectionSet.Selections, includes,
+                    GraphUtils.DetectChild<TUser, TRole, TUserRole>(context.FieldAst.SelectionSet.Selections, includes,
                         ((dynamic)context.FieldDefinition.ResolvedType).ResolvedType, args, whereArgs,
                         arguments: context.Arguments, mainType: _tableMetadata.Type);
                     Console.WriteLine($"whereArgs: {whereArgs}");
@@ -61,18 +66,18 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                 }
                 else if (context.FieldName.Contains("_count"))
                 {
-                    GraphUtils.DetectChild(context.FieldAst.SelectionSet.Selections, includes,
+                    GraphUtils.DetectChild<TUser, TRole, TUserRole>(context.FieldAst.SelectionSet.Selections, includes,
                         context.FieldDefinition.ResolvedType, args, whereArgs,
                         arguments: context.Arguments, mainType: _tableMetadata.Type);
                     Console.WriteLine($"whereArgs: {whereArgs}");
 
-                    return service.GetCountQuery(whereArgs: whereArgs.ToString(),                      
+                    return service.GetCountQuery(whereArgs: whereArgs.ToString(),
                         includeExpressions: includes, args: args.ToArray());
                 }
                 else
                 {
                     var id = context.GetArgument<dynamic>("id");
-                    GraphUtils.DetectChild(context.FieldAst.SelectionSet.Selections, includes,
+                    GraphUtils.DetectChild<TUser, TRole, TUserRole>(context.FieldAst.SelectionSet.Selections, includes,
                         context.FieldDefinition.ResolvedType, args, whereArgs,
                         arguments: context.Arguments, mainType: _tableMetadata.Type);
                     Console.WriteLine($"whereArgs: {whereArgs}");
@@ -113,6 +118,6 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                 .GetMethod("GetListHelper")
                 .MakeGenericMethod(type)
                 .Invoke(this, null) as IQueryable;
-       
+
     }
 }

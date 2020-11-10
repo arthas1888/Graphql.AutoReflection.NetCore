@@ -9,7 +9,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace SER.Graphql.Reflection.NetCore
 {
-    public class AppSchema : Schema
+    public class AppSchema<TUser, TRole, TUserRole> : Schema
+        where TUser : class
+        where TRole : class
+        where TUserRole : class
     {
         public AppSchema(IServiceProvider services)
             : base(services)
@@ -20,7 +23,7 @@ namespace SER.Graphql.Reflection.NetCore
             ValueConverter.Register(typeof(string), typeof(MultiLineString), ParseMultiLineString);
             ValueConverter.Register(typeof(string), typeof(TimeSpan), TimeSpanConvert);
 
-            Query = services.GetRequiredService<GraphQLQuery>();
+            Query = services.GetRequiredService<GraphQLQuery<TUser, TRole, TUserRole>>();
             Mutation = services.GetRequiredService<AppMutation>();
         }
 
