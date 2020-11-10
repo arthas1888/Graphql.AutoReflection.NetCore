@@ -88,13 +88,22 @@ namespace SER.Graphql.Reflection.NetCore.Custom
             config.UseDbContext<TContext>();
 
             if (typeof(IdentityUser).IsAssignableFrom(typeof(TUser)))
+            {
                 services.AddScoped<IGraphRepository<TUser>, GenericGraphRepository<TUser, TContext, TUser, TRole, TUserRole>>();
+                config.UseUser<TUser>();
+            }
 
             if (typeof(IdentityRole).IsAssignableFrom(typeof(TRole)))
+            {
                 services.AddScoped<IGraphRepository<TRole>, GenericGraphRepository<TRole, TContext, TUser, TRole, TUserRole>>();
+                config.UseRole<TRole>();
+            }
 
             if (typeof(IdentityUserRole<>).IsAssignableFrom(typeof(TUserRole)))
+            {
                 services.AddScoped<IGraphRepository<TUserRole>, GenericGraphRepository<TUserRole, TContext, TUser, TRole, TUserRole>>();
+                config.UseUserRole<TUserRole>();
+            }
 
             services.AddScoped<IGraphRepository<IdentityRoleClaim<string>>, GenericGraphRepository<IdentityRoleClaim<string>, TContext, TUser, TRole, TUserRole>>();
             AddScopedModelsDynamic<TContext, TUser, TRole, TUserRole>(services);

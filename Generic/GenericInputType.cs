@@ -1,5 +1,7 @@
 ﻿using GraphQL;
 using GraphQL.Types;
+using Microsoft.Extensions.Options;
+using SER.Graphql.Reflection.NetCore.Builder;
 using SER.Graphql.Reflection.NetCore.Utilities;
 using System;
 using System.Linq;
@@ -10,11 +12,13 @@ namespace SER.Graphql.Reflection.NetCore.Generic
     {
         private IDatabaseMetadata _dbMetadata;
         private ITableNameLookup _tableNameLookup;
+        private readonly IOptionsMonitor<SERGraphQlOptions> _optionsDelegate;
 
-        public GenericInputType(TableMetadata metaTable, IDatabaseMetadata dbMetadata, ITableNameLookup tableNameLookup)
+        public GenericInputType(TableMetadata metaTable, IDatabaseMetadata dbMetadata, ITableNameLookup tableNameLookup, IOptionsMonitor<SERGraphQlOptions> optionsDelegate)
         {
             _dbMetadata = dbMetadata;
             _tableNameLookup = tableNameLookup;
+            _optionsDelegate = optionsDelegate;
 
             Name = $"{metaTable.Type.Name.ToLower().ToSnakeCase()}_input";
             foreach (var tableColumn in metaTable.Columns)
@@ -59,7 +63,9 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             {
                 Field<IntGraphType>(columnMetadata.ColumnName, resolve: context => (int)context.Source.GetPropertyValue(columnMetadata.ColumnName));
             }
-            else if (!Constantes.SystemTablesSingular.Contains(columnMetadata.Type.Name))
+            else if (columnMetadata.Type != _optionsDelegate.CurrentValue.UserType
+                     && columnMetadata.Type != _optionsDelegate.CurrentValue.RoleType
+                     && columnMetadata.Type != _optionsDelegate.CurrentValue.UserRoleType)
             {
                 Field(
                     GraphUtils.ResolveGraphType(columnMetadata.Type),

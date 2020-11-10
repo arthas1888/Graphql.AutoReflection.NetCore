@@ -194,7 +194,7 @@ namespace SER.Graphql.Reflection.NetCore
 
                 if (attrName != "" && typeToEvaluate.GetProperties().SingleOrDefault(x => x.Name == attrName).GetCustomAttributes(true).Any(x => x.GetType() == typeof(RequiredAttribute)))
                     if (typeof(IBaseModel).IsAssignableFrom(childType)
-                            || Constantes.SystemTablesSingular.Contains(childType.Name))
+                        || childType == typeof(TUser) || childType == typeof(TRole) || childType == typeof(TUserRole))
                     {
                         types.Add(propertyInfo.Name, childType);
                     }
@@ -458,7 +458,6 @@ namespace SER.Graphql.Reflection.NetCore
                 var expToEvaluate = EqualPredicate<M>(typeof(M), paramFK, parentId);
                 iQueryable.RemoveRange(iQueryable.Where(expToEvaluate));
                 _context.SaveChanges();
-                //_context.tax_products.RemoveRange(_context.tax_products.Where(x => x.product_id.Value == 2));
             }
         }
 

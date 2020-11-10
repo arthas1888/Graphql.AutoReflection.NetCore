@@ -20,6 +20,9 @@ namespace SER.Graphql.Reflection.NetCore.Builder
         /// an exception is thrown at runtime when trying to use the stores.
         /// </summary>
         public Type DbContextType { get; set; }
+        public Type UserType { get; set; }
+        public Type RoleType { get; set; }
+        public Type UserRoleType { get; set; }
         public string ConnectionString { get; set; }
         public bool EnableCustomFilter { get; set; }
         public string NameCustomFilter { get; set; }

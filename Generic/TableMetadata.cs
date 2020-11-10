@@ -9,6 +9,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
     {
         public Type Type { get; set; }
         public string TableName { get; set; }
+        public string NamePK { get; set; }
         public string AssemblyFullName { get; set; }
         public IEnumerable<ColumnMetadata> Columns { get; set; }
     }

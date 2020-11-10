@@ -11,6 +11,7 @@ using SER.Graphql.Reflection.NetCore.Utilities;
 using SER.Graphql.Reflection.NetCore.Models;
 using Microsoft.Extensions.Options;
 using SER.Graphql.Reflection.NetCore.Builder;
+using System.ComponentModel.DataAnnotations;
 
 namespace SER.Graphql.Reflection.NetCore.Generic
 {
@@ -20,7 +21,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
         IEnumerable<TableMetadata> GetTableMetadatas();
     }
 
-    public sealed class DatabaseMetadata<TContext> : IDatabaseMetadata where TContext: DbContext
+    public sealed class DatabaseMetadata<TContext> : IDatabaseMetadata where TContext : DbContext
     {
         private readonly ITableNameLookup _tableNameLookup;
         private readonly IConfiguration _config;
@@ -67,17 +68,26 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                 }
                 var elementType = assembly.GetTypes().Where(x => !x.IsAbstract && typeof(IBaseModel).IsAssignableFrom(x))
                     .FirstOrDefault(x => x == entityType.ClrType);
+                if (elementType == null)
+                {
+                    elementType = assembly.GetTypes().Where(x => !x.IsAbstract)
+                                        .FirstOrDefault(x => x == entityType.ClrType);
+                }
+                var namePk = entityType.FindPrimaryKey()?.Properties
+                     .Select(x => x.Name).FirstOrDefault();
+                if (namePk == null) continue;
                 // Type elementType = Type.GetType(entityType.Name);
-                // Console.WriteLine($"tabla evaluada Name {entityType.Name} type3 {type3} elementType {elementType} {entityType.ClrType} ");
+                // Console.WriteLine($"tabla evaluada Name {entityType.Name} elementType {elementType} {entityType.ClrType} ");
 
                 metaTables.Add(new TableMetadata
                 {
                     TableName = tableName,
                     AssemblyFullName = entityType.ClrType.FullName,
                     Columns = GetColumnsMetadata(entityType, elementType),
-                    Type = elementType ?? entityType.ClrType
+                    Type = elementType ?? entityType.ClrType,
+                    NamePK = namePk
                 });
-                _tableNameLookup.InsertKeyName(tableName);
+                _tableNameLookup.InsertKeyName(elementType.Name.ToSnakeCase());
 
             }
 
@@ -120,14 +130,15 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             {
                 foreach (var propertyType in entityType.GetProperties())
                 {
-                    tableColumns.Add(new ColumnMetadata
+                    var columnMetadata = new ColumnMetadata
                     {
                         ColumnName = propertyType.GetColumnName(),
                         DataType = propertyType.GetRelationalTypeMapping().ClrType.Name,
                         IsNull = false,
                         Type = propertyType.GetRelationalTypeMapping().ClrType,
                         IsList = false
-                    });
+                    };
+                    tableColumns.Add(columnMetadata);
                     //Console.WriteLine($"columnMetadata info {JObject.FromObject(columnMetadata)}");
                 }
             }

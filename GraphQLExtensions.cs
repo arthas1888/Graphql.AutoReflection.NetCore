@@ -1,6 +1,8 @@
 ﻿using GraphQL.Authorization;
 using GraphQL.Builders;
 using GraphQL.Types;
+using Microsoft.Extensions.Options;
+using SER.Graphql.Reflection.NetCore.Builder;
 using SER.Graphql.Reflection.NetCore.Utilities;
 using System;
 using System.Collections.Generic;
@@ -55,7 +57,8 @@ namespace SER.Graphql.Reflection.NetCore
             return additionalPermissions;
         }
 
-        public static void ValidatePermissions(this IProvideMetadata type, string permission, string friendlyTableName, string typeName)
+        public static void ValidatePermissions(this IProvideMetadata type, string permission, string friendlyTableName, Type mainType,
+            IOptionsMonitor<SERGraphQlOptions> options)
         {
             var typesWithoutAuthentication = new string[] { };
             var typesWithoutPermission = new string[] { };
@@ -81,7 +84,9 @@ namespace SER.Graphql.Reflection.NetCore
                     var otherPerms = GetOtherPermissions().Where(x => x.Name == permission).SelectMany(x => x.Permissions).ToArray();
                     type.RequirePermissions(otherPerms);
 
-                    if (Constantes.SystemTablesSingular.Contains(typeName))
+                    if (mainType == options.CurrentValue.UserType
+                        || mainType == options.CurrentValue.RoleType
+                        || mainType == options.CurrentValue.UserRoleType)
                         type.RequirePermissions($"{friendlyTableName}.view");
                     else
                         type.RequirePermissions($"{permission}.view");

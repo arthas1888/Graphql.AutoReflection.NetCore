@@ -7,6 +7,8 @@ using System.Linq;
 using System.Linq.Dynamic.Core;
 using System.Reflection;
 using SER.Graphql.Reflection.NetCore.Utilities;
+using Microsoft.Extensions.Options;
+using SER.Graphql.Reflection.NetCore.Builder;
 
 namespace SER.Graphql.Reflection.NetCore
 {
@@ -14,18 +16,22 @@ namespace SER.Graphql.Reflection.NetCore
     {
         private ITableNameLookup _tableNameLookup;
         private IDatabaseMetadata _dbMetadata;
+        private readonly IOptionsMonitor<SERGraphQlOptions> _optionsDelegate;
         public QueryArguments TableArgs { get; set; }
 
         public CountTableType(
             IDatabaseMetadata dbMetadata,
             TableMetadata mainTable,
-            ITableNameLookup tableNameLookup)
+            ITableNameLookup tableNameLookup,
+            IOptionsMonitor<SERGraphQlOptions> optionsDelegate)
         {
             _tableNameLookup = tableNameLookup;
             _dbMetadata = dbMetadata;
+            _optionsDelegate = optionsDelegate;
+
             var permission = mainTable.Type.Name.ToLower();
-            var friendlyTableName = _tableNameLookup.GetFriendlyName(mainTable.TableName);
-            this.ValidatePermissions(permission, friendlyTableName, mainTable.Type.Name);
+            var friendlyTableName = _tableNameLookup.GetFriendlyName(mainTable.Type.Name.ToSnakeCase());
+            this.ValidatePermissions(permission, friendlyTableName, mainTable.Type, _optionsDelegate);
             // this.RequireAuthentication(); 
 
             Name = mainTable.TableName;
@@ -43,7 +49,7 @@ namespace SER.Graphql.Reflection.NetCore
                 GetInternalInstances(mainTableColumn, isList: true);
             }
             else if (typeof(IBaseModel).IsAssignableFrom(mainTableColumn.Type)
-                     || Constantes.SystemTablesSingular.Contains(mainTableColumn.Type.Name))
+                || _dbMetadata.GetTableMetadatas().Any(x => x.Type == mainTableColumn.Type))
             {
                 GetInternalInstances(mainTableColumn);
             }
@@ -64,7 +70,7 @@ namespace SER.Graphql.Reflection.NetCore
             foreach (var tableColumn in metaTable.Columns)
             {
                 if (tableColumn.IsList || typeof(IBaseModel).IsAssignableFrom(tableColumn.Type)
-                        || Constantes.SystemTablesSingular.Contains(tableColumn.Type.Name))
+                    || _dbMetadata.GetTableMetadatas().Any(x => x.Type == tableColumn.Type))
                 {
                 }
                 else

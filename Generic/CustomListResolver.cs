@@ -23,17 +23,20 @@ namespace SER.Graphql.Reflection.NetCore.Generic
         private Type _parentType;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IDataLoaderContextAccessor _accessor;
+        private IDatabaseMetadata _dbMetadata;
 
-        public CustomListResolver(Type dataType, 
-            Type parentType, 
-            IHttpContextAccessor httpContextAccessor, 
-            IDataLoaderContextAccessor accessor)
+        public CustomListResolver(Type dataType,
+            Type parentType,
+            IHttpContextAccessor httpContextAccessor,
+            IDataLoaderContextAccessor accessor,
+            IDatabaseMetadata dbMetadata)
         {
             _dataType = dataType;
             _mainTable = parentType.Name;
             _httpContextAccessor = httpContextAccessor;
             _parentType = parentType;
             _accessor = accessor;
+            _dbMetadata = dbMetadata;
         }
 
         public object Resolve(IResolveFieldContext context)
@@ -63,12 +66,12 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             dynamic service = _httpContextAccessor.HttpContext.RequestServices.GetService(graphRepositoryType);
             var first = context.GetArgument<int?>("first");
             Task<IEnumerable<T>> res = null;
+            var metaTable = _dbMetadata.GetTableMetadatas().FirstOrDefault(x => x.Type.Name == _dataType.Name);
+            var valueField = context.Source.GetType().GetProperty(metaTable.NamePK).GetValue(context.Source, null);
             try
             {
-                //if (Assembly.GetCallingAssembly().GetTypes()
-                //    .Where(x => !x.IsAbstract && typeof(BasicModel).IsAssignableFrom(x)).Any(x => x == context.Source.GetType()))
                 //IEquatable
-                if (context.Source is IBaseModel)
+                if (context.Source is IBaseModel && valueField is int @int)
                 {
                     var loader = _accessor.Context.GetOrAdd($"GetItemsByIds_{typeof(T).Name}", () =>
                        new CollectionBatchDataLoader<int, T>((ids, cancellation) =>
@@ -76,21 +79,39 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                            return service.GetItemsByIds(ids, context, param);
                        }, null));
 
-                    res = loader.LoadAsync(((IBaseModel)context.Source).id);
+                    res = loader.LoadAsync(@int);
+                }
+                else if (context.Source is IBaseModel && valueField is string @string)
+                {
+                    var loader = _accessor.Context.GetOrAdd($"GetItemsByIds_{typeof(T).Name}", () =>
+                       new CollectionBatchDataLoader<string, T>((ids, cancellation) =>
+                       {
+                           return service.GetItemsByIds(ids, context, param, isString: true);
+                       }, null));
 
+                    res = loader.LoadAsync(@string);
                 }
                 else if (context.Source is IdentityUser)
                 {
-                    //var accesor = _httpContextAccessor.HttpContext.RequestServices.GetService<IDataLoaderContextAccessor>();
-                    var loader = _accessor.Context.GetOrAddCollectionBatchLoader<string, T>($"GetItemsByIds",
+                    var loader = _accessor.Context.GetOrAddCollectionBatchLoader<string, T>($"GetItemsByIds_{typeof(T).Name}",
                         (ids) => service.GetItemsByIds(ids, context, param, isString: true));
                     res = loader.LoadAsync((context.Source as IdentityUser).Id);
                 }
                 else if (context.Source is IdentityRole)
                 {
-                    var loader = _accessor.Context.GetOrAddCollectionBatchLoader<string, T>($"GetItemsByIds",
+                    var loader = _accessor.Context.GetOrAddCollectionBatchLoader<string, T>($"GetItemsByIds_{typeof(T).Name}",
                         (ids) => service.GetItemsByIds(ids, context, param, isString: true));
                     res = loader.LoadAsync((context.Source as IdentityRole).Id);
+                }
+                else
+                {
+                    var loader = _accessor.Context.GetOrAdd($"GetItemsByIds_{typeof(T).Name}", () =>
+                       new CollectionBatchDataLoader<string, T>((ids, cancellation) =>
+                       {
+                           return service.GetItemsByIds(ids, context, param, isString: true);
+                       }, null));
+
+                    res = loader.LoadAsync((string)valueField);
                 }
 
                 if (first.HasValue && first.Value > 0)

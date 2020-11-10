@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
@@ -44,6 +45,54 @@ namespace SER.Graphql.Reflection.NetCore.Builder
             return Configure(options => options.DbContextType = type);
         }
 
+        public GraphQLConfiguration UseUser<TUser>()
+            where TUser : class
+            => UseUser(typeof(TUser));
+        public GraphQLConfiguration UseUser(Type type)
+        {
+            if (type is null)
+            {
+                throw new ArgumentNullException(nameof(type));
+            }
+
+            if (!typeof(IdentityUser).IsAssignableFrom(type))
+            {
+                throw new ArgumentException("configure IdentityUser", nameof(type));
+            }
+
+            return Configure(options => options.UserType = type);
+        }
+
+        public GraphQLConfiguration UseRole<TRole>()
+           where TRole : class
+           => UseRole(typeof(TRole));
+        public GraphQLConfiguration UseRole(Type type)
+        {
+            if (type is null)
+            {
+                throw new ArgumentNullException(nameof(type));
+            }
+
+            if (!typeof(IdentityRole).IsAssignableFrom(type))
+            {
+                throw new ArgumentException("configure IdentityRole", nameof(type));
+            }
+
+            return Configure(options => options.RoleType = type);
+        }
+
+        public GraphQLConfiguration UseUserRole<TUserRole>()
+           where TUserRole : class
+           => UseUserRole(typeof(TUserRole));
+        public GraphQLConfiguration UseUserRole(Type type)
+        {
+            if (type is null)
+            {
+                throw new ArgumentNullException(nameof(type));
+            }
+            return Configure(options => options.UserRoleType = type);
+        }
+
         /// <summary>
         /// Gets the services collection.
         /// </summary>
@@ -67,6 +116,6 @@ namespace SER.Graphql.Reflection.NetCore.Builder
             return this;
         }
 
-      
+
     }
 }

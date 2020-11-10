@@ -22,12 +22,14 @@ namespace SER.Graphql.Reflection.NetCore.Generic
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly FillDataExtensions _fillDataExtensions;
         private readonly IDataLoaderContextAccessor _accessor;
+        private readonly IOptionsMonitor<SERGraphQlOptions> _optionsDelegate;
         public GraphQLQuery(
             IDatabaseMetadata dbMetadata,
             ITableNameLookup tableNameLookup,
             IHttpContextAccessor httpContextAccessor,
             FillDataExtensions fillDataExtensions,
-            IDataLoaderContextAccessor accessor
+            IDataLoaderContextAccessor accessor,
+            IOptionsMonitor<SERGraphQlOptions> optionsDelegate
             )
         {
             _dbMetadata = dbMetadata;
@@ -35,12 +37,12 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             _httpContextAccessor = httpContextAccessor;
             _fillDataExtensions = fillDataExtensions;
             _accessor = accessor;
+            _optionsDelegate = optionsDelegate;
 
             Name = "Query";
 
             foreach (var metaTable in _dbMetadata.GetTableMetadatas())
             {
-                //var friendlyTableName = _tableNameLookup.GetFriendlyName(metaTable.TableName);
                 var friendlyTableName = metaTable.Type.Name.ToSnakeCase().ToLower();
 
                 dynamic objectGraphType = null;
@@ -48,7 +50,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                 {
                     var inherateType = typeof(TableType<>).MakeGenericType(new Type[] { metaTable.Type });
                     objectGraphType = Activator.CreateInstance(inherateType, new object[] { metaTable,
-                        _dbMetadata, _tableNameLookup, _httpContextAccessor, _accessor, false });
+                        _dbMetadata, _tableNameLookup, _httpContextAccessor, _accessor, _optionsDelegate, false });
                 }
 
                 var tableType = _tableNameLookup.GetOrInsertGraphType(metaTable.Type.Name, objectGraphType);
@@ -57,7 +59,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                 if (!_tableNameLookup.ExistGraphType($"{metaTable.Type.Name}_count"))
                 {
                     var inherateType = typeof(CountTableType<>).MakeGenericType(new Type[] { metaTable.Type });
-                    objectCountGraphType = Activator.CreateInstance(inherateType, new object[] { _dbMetadata, metaTable, _tableNameLookup });
+                    objectCountGraphType = Activator.CreateInstance(inherateType, new object[] { _dbMetadata, metaTable, _tableNameLookup, _optionsDelegate });
                 }
 
                 var countTableType = _tableNameLookup.GetOrInsertGraphType($"{metaTable.Type.Name}_count", objectCountGraphType);

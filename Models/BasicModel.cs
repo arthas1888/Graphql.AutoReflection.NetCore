@@ -6,7 +6,6 @@ namespace SER.Graphql.Reflection.NetCore.Models
 {
     public interface IBaseModel
     {
-        public int id { get; set; }
     }
 
 }

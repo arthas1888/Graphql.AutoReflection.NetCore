@@ -6,6 +6,8 @@ using System;
 using SER.Graphql.Reflection.NetCore.Utilities;
 using System.Linq;
 using GraphQL.Authorization;
+using Microsoft.Extensions.Options;
+using SER.Graphql.Reflection.NetCore.Builder;
 
 namespace SER.Graphql.Reflection.NetCore
 {
@@ -14,26 +16,32 @@ namespace SER.Graphql.Reflection.NetCore
         private IDatabaseMetadata _dbMetadata;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private ITableNameLookup _tableNameLookup;
+        private readonly IOptionsMonitor<SERGraphQlOptions> _optionsDelegate;
 
         public AppMutation(
             IDatabaseMetadata dbMetadata,
-             ITableNameLookup tableNameLookup,
-            IHttpContextAccessor httpContextAccessor
+            ITableNameLookup tableNameLookup,
+            IHttpContextAccessor httpContextAccessor,
+            IOptionsMonitor<SERGraphQlOptions> optionsDelegate
             )
         {
             _dbMetadata = dbMetadata;
             _httpContextAccessor = httpContextAccessor;
             _tableNameLookup = tableNameLookup;
+            _optionsDelegate = optionsDelegate;
 
             this.AuthorizeWith("Authorized");
 
             foreach (var metaTable in _dbMetadata.GetTableMetadatas())
             {
-                if (Constantes.SystemTablesSingular.Contains(metaTable.Type.Name)) continue;
+                if (metaTable.Type == _optionsDelegate.CurrentValue.UserType
+                     || metaTable.Type == _optionsDelegate.CurrentValue.RoleType
+                     || metaTable.Type == _optionsDelegate.CurrentValue.UserRoleType) continue;
+
                 var type = metaTable.Type;
                 var friendlyTableName = type.Name.ToLower().ToSnakeCase();
 
-                var genericInputType = new GenericInputType(metaTable, _dbMetadata, _tableNameLookup);
+                var genericInputType = new GenericInputType(metaTable, _dbMetadata, _tableNameLookup, _optionsDelegate);
                 dynamic objectGraphType = null;
                 if (!_tableNameLookup.ExistGraphType(metaTable.Type.Name))
                 {

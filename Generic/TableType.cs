@@ -25,6 +25,7 @@ namespace SER.Graphql.Reflection.NetCore
         private ITableNameLookup _tableNameLookup;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IDataLoaderContextAccessor _accessor;
+        private readonly IOptionsMonitor<SERGraphQlOptions> _optionsDelegate;
         private bool _crud;
 
         public QueryArguments TableArgs { get; set; }
@@ -35,6 +36,7 @@ namespace SER.Graphql.Reflection.NetCore
             ITableNameLookup tableNameLookup,
             IHttpContextAccessor httpContextAccessor,
             IDataLoaderContextAccessor accessor,
+            IOptionsMonitor<SERGraphQlOptions> optionsDelegate,
             bool crud = false)
         {
             _crud = crud;
@@ -42,13 +44,14 @@ namespace SER.Graphql.Reflection.NetCore
             _dbMetadata = dbMetadata;
             _accessor = accessor;
             _httpContextAccessor = httpContextAccessor;
+            _optionsDelegate = optionsDelegate;
 
             var permission = mainTable.Type.Name.ToLower();
-            var friendlyTableName = _tableNameLookup.GetFriendlyName(mainTable.TableName);
+            var friendlyTableName = _tableNameLookup.GetFriendlyName(mainTable.Type.Name.ToSnakeCase());
             if (crud)
                 this.RequirePermissions($"{permission}.add", $"{permission}.update", $"{permission}.delete");
             else
-                this.ValidatePermissions(permission, friendlyTableName, mainTable.Type.Name);
+                this.ValidatePermissions(permission, friendlyTableName, mainTable.Type, _optionsDelegate);
 
             Name = mainTable.TableName;
 
@@ -60,7 +63,7 @@ namespace SER.Graphql.Reflection.NetCore
 
         private void InitMainGraphTableColumn(Type parentType, ColumnMetadata mainTableColumn)
         {
-            //if (parentType.Name == "Customer")
+            //if (parentType.Name == "ApplicationUser")
             //    Console.WriteLine($"{mainTableColumn.ColumnName} GraphType: {GraphUtils.ResolveGraphType(mainTableColumn.Type)} Type: {mainTableColumn.Type} IsList {mainTableColumn.IsList}");
             // instancias internas
             if (mainTableColumn.IsList)    // incluye litas de cada objeto
@@ -74,7 +77,7 @@ namespace SER.Graphql.Reflection.NetCore
                 var listObjectGraph = GetInternalListInstances(mainTableColumn, queryThirdArguments: queryThirdArguments);
 
                 var inherateType = typeof(CustomListResolver<>).MakeGenericType(new Type[] { mainTableColumn.Type });
-                dynamic resolver = Activator.CreateInstance(inherateType, new object[] { mainTableColumn.Type, parentType, _httpContextAccessor, _accessor });
+                dynamic resolver = Activator.CreateInstance(inherateType, new object[] { mainTableColumn.Type, parentType, _httpContextAccessor, _accessor, _dbMetadata });
 
                 AddField(new FieldType
                 {
@@ -85,7 +88,7 @@ namespace SER.Graphql.Reflection.NetCore
                 });
             }
             else if (typeof(IBaseModel).IsAssignableFrom(mainTableColumn.Type)
-                        || Constantes.SystemTablesSingular.Contains(mainTableColumn.Type.Name))
+                        || _dbMetadata.GetTableMetadatas().Any(x => x.Type == mainTableColumn.Type))
             {
                 GetInternalInstances(mainTableColumn);
             }
@@ -167,8 +170,8 @@ namespace SER.Graphql.Reflection.NetCore
                     FillArguments(queryArguments, columnMetadata.ColumnName, columnMetadata.Type);
                 }
             }
-            else if (typeof(IBaseModel).IsAssignableFrom(columnMetadata.Type)
-                    || Constantes.SystemTablesSingular.Contains(columnMetadata.Type.Name))
+            else if (typeof(IBaseModel).IsAssignableFrom(columnMetadata.Type) 
+                || _dbMetadata.GetTableMetadatas().Any(x => x.Type == columnMetadata.Type))
             {
                 var queryThirdArguments = new QueryArguments
                 {
@@ -338,7 +341,7 @@ namespace SER.Graphql.Reflection.NetCore
                         }
                     }
                     else if (typeof(IBaseModel).IsAssignableFrom(tableColumn.Type)
-                        || Constantes.SystemTablesSingular.Contains(tableColumn.Type.Name))
+                        || _dbMetadata.GetTableMetadatas().Any(x => x.Type == tableColumn.Type))
                     {
                         var queryThirdArguments = new QueryArguments
                         {
