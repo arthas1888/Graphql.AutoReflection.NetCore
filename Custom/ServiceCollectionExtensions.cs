@@ -75,7 +75,6 @@ namespace SER.Graphql.Reflection.NetCore.Custom
             services
                 .AddGraphQL(o =>
                 {
-                    o.ExposeExceptions = false; // CurrentEnvironment.IsDevelopment();
                     o.EnableMetrics = false; // CurrentEnvironment.IsDevelopment();
                     o.UnhandledExceptionDelegate = ctx => Console.WriteLine("error: " + ctx.OriginalException.Message);
                 })

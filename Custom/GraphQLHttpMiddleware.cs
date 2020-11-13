@@ -108,7 +108,7 @@ namespace SER.Graphql.Reflection.NetCore.Custom
                         }
 
                         bodyGQLRequest = deserializationResult.Single;
-                        //bodyGQLBatchRequest = deserializationResult.Batch;
+                        bodyGQLBatchRequest = deserializationResult.Batch;
                         break;
 
                     case MediaType.GRAPH_QL:
@@ -157,7 +157,7 @@ namespace SER.Graphql.Reflection.NetCore.Custom
             {
                 var stopwatch = ValueStopwatch.StartNew();
                 // var result = await ExecuteRequestAsync(schema, gqlRequest, context, executer, cancellationToken);
-                var result = await ExecuteRequestAsync(gqlRequest, userContext, executer, cancellationToken);
+                var result = await ExecuteRequestAsync(gqlRequest, userContext, executer, context.RequestServices, cancellationToken);
 
 
                 await RequestExecutedAsync(new GraphQLRequestExecutionResult(gqlRequest, result, stopwatch.Elapsed));
@@ -184,7 +184,7 @@ namespace SER.Graphql.Reflection.NetCore.Custom
 
                     var stopwatch = ValueStopwatch.StartNew();
                     // var result = await ExecuteRequestAsync(schema, gqlRequestInBatch, context, executer, cancellationToken);
-                    var result = await ExecuteRequestAsync(gqlRequestInBatch, userContext, executer, cancellationToken);
+                    var result = await ExecuteRequestAsync(gqlRequestInBatch, userContext, executer, context.RequestServices, cancellationToken);
 
                     await RequestExecutedAsync(new GraphQLRequestExecutionResult(gqlRequestInBatch, result, stopwatch.Elapsed, i));
                     if (result.Errors?.Count > 0)
@@ -206,14 +206,14 @@ namespace SER.Graphql.Reflection.NetCore.Custom
             }
         }
 
-
-        private static Task<ExecutionResult> ExecuteRequestAsync(GraphQLRequest gqlRequest, IDictionary<string, object> userContext,
-            IGraphQLExecuter<TSchema> executer, CancellationToken token)
+        private static Task<ExecutionResult> ExecuteRequestAsync(GraphQLRequest gqlRequest, IDictionary<string, object> userContext, 
+            IGraphQLExecuter<TSchema> executer, IServiceProvider requestServices, CancellationToken token)
             => executer.ExecuteAsync(
                 gqlRequest.OperationName,
                 gqlRequest.Query,
                 gqlRequest.Inputs,
                 userContext,
+                requestServices,
                 token);
 
         private Task<ExecutionResult> ExecuteRequestAsync(
@@ -232,7 +232,6 @@ namespace SER.Graphql.Reflection.NetCore.Custom
                 _.ValidationRules = DocumentValidator.CoreRules.Concat(_settings.ValidationRules);
                 _.ComplexityConfiguration = _options.ComplexityConfiguration;
                 _.EnableMetrics = _options.EnableMetrics;
-                _.ExposeExceptions = _options.ExposeExceptions;
                 _.UnhandledExceptionDelegate = _options.UnhandledExceptionDelegate;
                 _.SchemaFilter = _options.SchemaFilter ?? new DefaultSchemaFilter();
                 _.CancellationToken = token;

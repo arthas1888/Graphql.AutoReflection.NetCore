@@ -70,9 +70,15 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                     .FirstOrDefault(x => x == entityType.ClrType);
                 if (elementType == null)
                 {
-                    elementType = assembly.GetTypes().Where(x => !x.IsAbstract)
-                                        .FirstOrDefault(x => x == entityType.ClrType);
+                    elementType = assembly.GetTypes().Where(x => !x.IsAbstract).FirstOrDefault(x =>
+                        x == entityType.ClrType && (_optionsDelegate.CurrentValue.UserType.Name == entityType.Name.Split(".").Last()
+                        || _optionsDelegate.CurrentValue.RoleType.Name == entityType.Name.Split(".").Last()
+                        || "ApplicationUserRole" == entityType.Name.Split(".").Last()));
+
+                    if (elementType == null) continue;
+                    // Console.WriteLine($"tabla evaluada Name {entityType.Name.Split(".").Last()} elementType {elementType}");
                 }
+               
                 var namePk = entityType.FindPrimaryKey()?.Properties
                      .Select(x => x.Name).FirstOrDefault();
                 if (namePk == null) continue;

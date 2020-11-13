@@ -60,35 +60,29 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             return GetLoader(context, $"{paramFK}");
         }
 
-        public Task<IEnumerable<T>> GetLoader(IResolveFieldContext context, string param)
+        public IDataLoaderResult<IEnumerable<T>> GetLoader(IResolveFieldContext context, string param)
         {
             Type graphRepositoryType = typeof(IGraphRepository<>).MakeGenericType(new Type[] { _dataType });
             dynamic service = _httpContextAccessor.HttpContext.RequestServices.GetService(graphRepositoryType);
             var first = context.GetArgument<int?>("first");
-            Task<IEnumerable<T>> res = null;
-            var metaTable = _dbMetadata.GetTableMetadatas().FirstOrDefault(x => x.Type.Name == _dataType.Name);
+            //Task<IEnumerable<T>> res = null;
+            var metaTable = _dbMetadata.GetTableMetadatas().FirstOrDefault(x => x.Type == context.Source.GetType());
+            // Console.WriteLine($"--------------------------- main type {context.Source.GetType()} PK {metaTable.NamePK} _dataType {_dataType.Name}----------------------- ");
             var valueField = context.Source.GetType().GetProperty(metaTable.NamePK).GetValue(context.Source, null);
+            IDataLoaderResult<IEnumerable<T>> res = null;
             try
             {
                 //IEquatable
                 if (context.Source is IBaseModel && valueField is int @int)
                 {
-                    var loader = _accessor.Context.GetOrAdd($"GetItemsByIds_{typeof(T).Name}", () =>
-                       new CollectionBatchDataLoader<int, T>((ids, cancellation) =>
-                       {
-                           return service.GetItemsByIds(ids, context, param);
-                       }, null));
-
+                    var loader = _accessor.Context.GetOrAddCollectionBatchLoader<int, T>($"GetItemsByIds_{typeof(T).Name}",
+                      (ids) => service.GetItemsByIds(ids, context, param));
                     res = loader.LoadAsync(@int);
                 }
                 else if (context.Source is IBaseModel && valueField is string @string)
                 {
-                    var loader = _accessor.Context.GetOrAdd($"GetItemsByIds_{typeof(T).Name}", () =>
-                       new CollectionBatchDataLoader<string, T>((ids, cancellation) =>
-                       {
-                           return service.GetItemsByIds(ids, context, param, isString: true);
-                       }, null));
-
+                    var loader = _accessor.Context.GetOrAddCollectionBatchLoader<string, T>($"GetItemsByIds_{typeof(T).Name}",
+                      (ids) => service.GetItemsByIds(ids, context, param, isString: true));
                     res = loader.LoadAsync(@string);
                 }
                 else if (context.Source is IdentityUser)
@@ -105,18 +99,14 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                 }
                 else
                 {
-                    var loader = _accessor.Context.GetOrAdd($"GetItemsByIds_{typeof(T).Name}", () =>
-                       new CollectionBatchDataLoader<string, T>((ids, cancellation) =>
-                       {
-                           return service.GetItemsByIds(ids, context, param, isString: true);
-                       }, null));
-
+                    var loader = _accessor.Context.GetOrAddCollectionBatchLoader<string, T>($"GetItemsByIds_{typeof(T).Name}",
+                        (ids) => service.GetItemsByIds(ids, context, param, isString: true));
                     res = loader.LoadAsync((string)valueField);
                 }
 
                 if (first.HasValue && first.Value > 0)
                 {
-                    return res?.ContinueWith(x => x.Result.Take(first.Value));
+                    return res;
                 }
             }
             catch (Exception e)

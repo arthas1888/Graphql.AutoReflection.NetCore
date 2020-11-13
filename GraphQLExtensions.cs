@@ -60,19 +60,20 @@ namespace SER.Graphql.Reflection.NetCore
         public static void ValidatePermissions(this IProvideMetadata type, string permission, string friendlyTableName, Type mainType,
             IOptionsMonitor<SERGraphQlOptions> options)
         {
-            var typesWithoutAuthentication = new string[] { };
-            var typesWithoutPermission = new string[] { };
+            var typesWithoutAuthentication = new List<string>();
+            var typesWithoutPermission = new List<string>();
 
             try
             {
                 var listWithoutAuth = JsonSerializer.Deserialize<List<string>>(File.ReadAllText("permissions.graphql.without-auth.json"));
-                typesWithoutAuthentication.ToList().AddRange(listWithoutAuth);
+                typesWithoutAuthentication.AddRange(listWithoutAuth);
 
                 var listWithoutPerm = JsonSerializer.Deserialize<List<string>>(File.ReadAllText("permissions.graphql.without-perm.json"));
-                typesWithoutPermission.ToList().AddRange(listWithoutPerm);
+                typesWithoutPermission.AddRange(listWithoutPerm);
             }
-            catch (Exception) { }
-
+            catch (Exception)
+            {
+            }
             if (!typesWithoutAuthentication.Contains(permission) &&
                !typesWithoutAuthentication.Contains(friendlyTableName))
             {
