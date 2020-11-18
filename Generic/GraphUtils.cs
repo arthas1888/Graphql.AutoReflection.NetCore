@@ -35,7 +35,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                         key = $"{parentModel}.{propertyInfo.Name}";
                     if (isList)
                         key = $"{parentModel}.Any({propertyInfo.Name}";
-                    var isValid = SqlCommandExt.ConcatFilter(args, whereArgs, $"@{i}", key, value, "¬",
+                    var isValid = SqlCommandExtension.ConcatFilter(args, whereArgs, $"@{i}", key, value, "¬",
                         typeProperty: propertyInfo.PropertyType, index: j, isList: isList, isValid: lastValid);
 
                     if (isValid)

@@ -24,6 +24,8 @@ using System.Reflection;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.Extensions.Options;
 using SER.Graphql.Reflection.NetCore.Builder;
+using Grpc.Net.Client;
+using Grpc.Core;
 
 namespace SER.Graphql.Reflection.NetCore
 {
@@ -74,7 +76,7 @@ namespace SER.Graphql.Reflection.NetCore
         public string GetCompanyIdUser()
         {
             return _httpContextAccessor.HttpContext.User.Claims.FirstOrDefault(x =>
-                x.Type == CustomClaimTypes.CompanyId)?.Value;
+                x.Type == GraphClaimTypes.CompanyId)?.Value;
         }
 
         public string GetCurrentUser()
@@ -331,6 +333,9 @@ namespace SER.Graphql.Reflection.NetCore
 
                 var obj = _context.Add(entity);
                 _context.SaveChanges();
+
+                SendStatus(GraphGrpcStatus.CREATE, GetKey(entity)).Wait();
+
                 return obj.Entity;
             }
             catch (ValidationException exc)
@@ -347,6 +352,13 @@ namespace SER.Graphql.Reflection.NetCore
                 _context.Entry(entity).State = EntityState.Detached;
             }
             return entity;
+        }
+
+        public virtual string GetKey(T entity)
+        {
+            var keyName = _context.Model.FindEntityType(typeof(T)).FindPrimaryKey()?.Properties
+                .Select(x => x.Name).FirstOrDefault(); // .Single();
+            return entity.GetType().GetProperty(keyName).GetValue(entity, null).ToString();
         }
 
         public T Update(int id, T entity, string alias = "")
@@ -393,6 +405,7 @@ namespace SER.Graphql.Reflection.NetCore
 
                     //_context.Entry(obj).State = EntityState.Modified;
                     _context.SaveChanges();
+                    SendStatus(GraphGrpcStatus.UPDATE, id.ToString()).Wait();
                 }
                 catch (ValidationException exc)
                 {
@@ -502,10 +515,48 @@ namespace SER.Graphql.Reflection.NetCore
 
                 var cacheKeySize = string.Format("_{0}_size", model);
                 _cache.Remove(cacheKeySize);
+                SendStatus(GraphGrpcStatus.DELETE, id.ToString()).Wait();
             }
             return obj;
         }
 
+        #region helpers
+        enum GraphGrpcStatus
+        {
+            CREATE, UPDATE, DELETE
+        }
+
+        private async Task SendStatus(GraphGrpcStatus action, string id)
+        {
+            if (_optionsDelegate.CurrentValue.EnableStatusMutation)
+            {
+                var channel = GrpcChannel.ForAddress(_optionsDelegate.CurrentValue.GRPCUrl);
+                var client = new GraphStatus.GraphStatusClient(channel);
+                try
+                {
+                    var res = await client.RequestStatusAsync(
+                        new GraphStatusRequest
+                        {
+                            ClassName = typeof(T).Name,
+                            Action = (int)action,
+                            Id = id,
+                            CompanyId = GetCompanyIdUser()
+                        });
+                }
+                catch (RpcException e)
+                {
+                    _logger.LogError($"error RPC : {e}");
+                    // Grpc.Core.StatusCode.Unknown
+                    throw;
+                }
+                catch (Exception e)
+                {
+                    _logger.LogError($"error RPC : {e}");
+                    throw;
+                }
+            }
+        }
+        #endregion
 
         #region utilities
         public int CacheGetOrCreate<E>(IQueryable<E> query)

@@ -9,7 +9,7 @@ using System.Text.RegularExpressions;
 
 namespace SER.Graphql.Reflection.NetCore.Utilities
 {
-    public static class  SqlCommandExt
+    public static class  SqlCommandExtension
     {
         public static bool ConcatFilter(List<object> values, StringBuilder expresion, string paramName,
             string key, string value, string column, Type typeProperty = null, int? index = null, bool isList = false,
@@ -103,66 +103,5 @@ namespace SER.Graphql.Reflection.NetCore.Utilities
             }
             return expValided;
         }
-
-        public static void ConcatFilter<T>(List<Expression<Func<T, bool>>> listExpOR, List<Expression<Func<T, bool>>> listExpAND,
-          int index, string key, object value, string patternToEvaluate, Type fieldType, Match match = null) where T : class
-        {
-            string select = "";
-            Expression<Func<T, bool>> expToEvaluate = null;
-
-            if (patternToEvaluate == "¬")
-            {
-                if (fieldType == typeof(string))
-                {
-                    // expToEvaluate = FilterILike<T>(key, $"%{value}%");
-                    expToEvaluate = (b => EF.Functions.ILike(EF.Property<string>(b, key), $"%{value}%"));
-                }
-                else if (fieldType == typeof(IBaseModel))
-                {
-                    select = string.Format("{0}.ToLower().Contains(@{1})", key, 0);
-                    expToEvaluate = DynamicExpressionParser.ParseLambda<T, bool>(new ParsingConfig(), true, select, ((string)value).ToLower());
-
-                }
-                else if (TypeExtensions.IsNumber(fieldType))
-                {
-                    select = string.Format("string(object({0})).Contains(@{1})", key, 0);
-                    expToEvaluate = DynamicExpressionParser.ParseLambda<T, bool>(new ParsingConfig(), true, select, value);
-                }
-
-            }
-            else
-            {
-                if (value is DateTime || value is DateTime)
-                {
-                }
-                else
-                {
-                    select = string.Format("{0} = @{1}", key, 0);
-                    expToEvaluate = DynamicExpressionParser.ParseLambda<T, bool>(new ParsingConfig(), true, select, value);
-                }
-            }
-
-            if (match == null || index == 0) { if (expToEvaluate != null) listExpOR.Add(expToEvaluate); }
-            else
-            {
-                // query filtro por AND o OR  
-                if (index > 1)
-                    match = match.NextMatch();
-
-                if (match.Success)
-                {
-                    if (match.Value == "/")
-                    {
-                        if (expToEvaluate != null) listExpAND.Add(expToEvaluate);
-                    }
-                    else
-                    {
-                        if (expToEvaluate != null) listExpOR.Add(expToEvaluate);
-                    }
-                }
-            }
-
-        }
-
     }
 }

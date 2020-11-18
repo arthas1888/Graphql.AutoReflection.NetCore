@@ -4,7 +4,7 @@ using System.Text;
 
 namespace SER.Graphql.Reflection.NetCore.Utilities
 {
-    public class Constantes
+    public class Constants
     {
         public static string[] SystemTablesSnakeCase = new string[]
         {
@@ -12,7 +12,7 @@ namespace SER.Graphql.Reflection.NetCore.Utilities
         };
     }
 
-    public class CustomClaimTypes
+    public class GraphClaimTypes
     {
         public const string Permission = "http://ngcore/claims/permission";
         public const string CompanyId = "company_id";

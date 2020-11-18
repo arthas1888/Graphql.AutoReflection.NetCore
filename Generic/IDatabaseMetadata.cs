@@ -62,7 +62,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             foreach (var entityType in _dbContext.Model.GetEntityTypes())
             {
                 var tableName = entityType.GetTableName();
-                if (Constantes.SystemTablesSnakeCase.Contains(tableName))
+                if (Constants.SystemTablesSnakeCase.Contains(tableName))
                 {
                     continue;
                 }
@@ -73,7 +73,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                     elementType = assembly.GetTypes().Where(x => !x.IsAbstract).FirstOrDefault(x =>
                         x == entityType.ClrType && (_optionsDelegate.CurrentValue.UserType.Name == entityType.Name.Split(".").Last()
                         || _optionsDelegate.CurrentValue.RoleType.Name == entityType.Name.Split(".").Last()
-                        || "ApplicationUserRole" == entityType.Name.Split(".").Last()));
+                        || _optionsDelegate.CurrentValue.UserRoleType.Name == entityType.Name.Split(".").Last()));
 
                     if (elementType == null) continue;
                     // Console.WriteLine($"tabla evaluada Name {entityType.Name.Split(".").Last()} elementType {elementType}");

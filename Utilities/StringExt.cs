@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace SER.Graphql.Reflection.NetCore.Utilities
 {
-    public static class StringExtensions
+    public static class StringExt
     {
         private static readonly Random random = new Random();
 

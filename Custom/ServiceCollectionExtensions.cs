@@ -98,7 +98,7 @@ namespace SER.Graphql.Reflection.NetCore.Custom
                 config.UseRole<TRole>();
             }
 
-            if (typeof(IdentityUserRole<>).IsAssignableFrom(typeof(TUserRole)))
+            if (typeof(IdentityUserRole<string>).IsAssignableFrom(typeof(TUserRole)))
             {
                 services.AddScoped<IGraphRepository<TUserRole>, GenericGraphRepository<TUserRole, TContext, TUser, TRole, TUserRole>>();
                 config.UseUserRole<TUserRole>();
@@ -119,7 +119,7 @@ namespace SER.Graphql.Reflection.NetCore.Custom
             {
                 var interfaceType = typeof(IGraphRepository<>).MakeGenericType(new Type[] { type });
                 var inherateType = typeof(GenericGraphRepository<,,,,>).MakeGenericType(new Type[] { type, typeof(TContext),
-                    typeof(TContext),typeof(TContext), typeof(TContext)});
+                    typeof(TUser),typeof(TRole), typeof(TUserRole)});
                 ServiceLifetime serviceLifetime = ServiceLifetime.Scoped;
                 // Console.WriteLine($"Dependencia IGraphRepository registrada type {type.Name}");
                 services.TryAdd(new ServiceDescriptor(interfaceType, inherateType, serviceLifetime));

@@ -26,6 +26,8 @@ namespace SER.Graphql.Reflection.NetCore.Builder
         public string ConnectionString { get; set; }
         public bool EnableCustomFilter { get; set; }
         public string NameCustomFilter { get; set; }
+        public string GRPCUrl { get; set; }
+        public bool EnableStatusMutation { get; set; }
 
 
     }

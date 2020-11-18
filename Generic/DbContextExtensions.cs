@@ -103,18 +103,18 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                         {
                             foreach (var (field, i) in properties.Select((v, i) => (v, i)))
                             {
-                                SqlCommandExt.ConcatFilter(values, expresion, string.Format("@{0}", i + index), field.Key, value[1], column,
+                                SqlCommandExtension.ConcatFilter(values, expresion, string.Format("@{0}", i + index), field.Key, value[1], column,
                                     typeProperty: field.Value, index: i);
                             }
                             break;
                         }
-                        catch (Exception e)
+                        catch (Exception)
                         {
-                            throw e;
+                            throw;
                         }
                     }
                     var paramName = string.Format("@{0}", index);
-                    SqlCommandExt.ConcatFilter(values, expresion, paramName, value[0], value[1], column);
+                    SqlCommandExtension.ConcatFilter(values, expresion, paramName, value[0], value[1], column);
 
                 }
                 expresion.Append(")");
