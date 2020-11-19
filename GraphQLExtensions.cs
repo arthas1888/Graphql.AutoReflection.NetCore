@@ -80,10 +80,12 @@ namespace SER.Graphql.Reflection.NetCore
                 type.RequireAuthentication();
 
                 if (!typesWithoutPermission.Contains(permission) &&
-                !typesWithoutPermission.Contains(friendlyTableName))
+                    !typesWithoutPermission.Contains(friendlyTableName))
                 {
                     var otherPerms = GetOtherPermissions().Where(x => x.Name == permission).SelectMany(x => x.Permissions).ToArray();
                     type.RequirePermissions(otherPerms);
+                    var otherfriendlyPerms = GetOtherPermissions().Where(x => x.Name == friendlyTableName).SelectMany(x => x.Permissions).ToArray();
+                    type.RequirePermissions(otherfriendlyPerms);
 
                     if (mainType == options.CurrentValue.UserType
                         || mainType == options.CurrentValue.RoleType
