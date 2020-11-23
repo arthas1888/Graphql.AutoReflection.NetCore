@@ -236,7 +236,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                         model = field.Name;
                         if ((mainType == typeof(TUser) && typeof(IdentityUser).IsAssignableFrom(typeof(TUser)))
                             || (mainType == typeof(TRole) && typeof(IdentityRole).IsAssignableFrom(typeof(TRole)))
-                            || (mainType == typeof(TUserRole) && typeof(IdentityUserRole<>).IsAssignableFrom(typeof(TUserRole)))
+                            || (mainType == typeof(TUserRole))
                             )
                             model = FirstLetterToUpper(model);
 
@@ -383,7 +383,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
 
                 if ((type == typeof(TUser) && typeof(IdentityUser).IsAssignableFrom(typeof(TUser)))
                     || (type == typeof(TRole) && typeof(IdentityRole).IsAssignableFrom(typeof(TRole)))
-                    || (type == typeof(TUserRole) && typeof(IdentityUserRole<>).IsAssignableFrom(typeof(TUserRole)))
+                    || (type == typeof(TUserRole))
                     )
                     fieldName = FirstLetterToUpper(fieldName);
 
