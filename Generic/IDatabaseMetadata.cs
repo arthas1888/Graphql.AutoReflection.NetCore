@@ -21,7 +21,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
         IEnumerable<TableMetadata> GetTableMetadatas();
     }
 
-    public sealed class DatabaseMetadata<TContext> : IDatabaseMetadata where TContext : DbContext
+    public class DatabaseMetadata<TContext> : IDatabaseMetadata where TContext : DbContext
     {
         private readonly ITableNameLookup _tableNameLookup;
         private readonly IConfiguration _config;
@@ -36,19 +36,24 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             _config = config;
             _tableNameLookup = tableNameLookup;
             _optionsDelegate = optionsDelegate;
-            if (_tables == null)
+            if (_tables == null || !_tables.Any())
                 ReloadMetadata();
         }
         public IEnumerable<TableMetadata> GetTableMetadatas()
         {
-            if (_tables == null)
-                return new List<TableMetadata>();
+            if (_tables == null || !_tables.Any())
+            {
+                _tables = FetchTableMetaData();
+                return _tables;
+            }
             return _tables;
         }
+
         public void ReloadMetadata()
         {
             _tables = FetchTableMetaData();
         }
+
         private IReadOnlyList<TableMetadata> FetchTableMetaData()
         {
             var metaTables = new List<TableMetadata>();
@@ -78,7 +83,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                     if (elementType == null) continue;
                     // Console.WriteLine($"tabla evaluada Name {entityType.Name.Split(".").Last()} elementType {elementType}");
                 }
-               
+
                 var namePk = entityType.FindPrimaryKey()?.Properties
                      .Select(x => x.Name).FirstOrDefault();
                 if (namePk == null) continue;

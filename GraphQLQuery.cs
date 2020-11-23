@@ -40,8 +40,9 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             _optionsDelegate = optionsDelegate;
 
             Name = "Query";
+            var tables = _dbMetadata.GetTableMetadatas();
 
-            foreach (var metaTable in _dbMetadata.GetTableMetadatas())
+            foreach (var metaTable in tables)
             {
                 var friendlyTableName = metaTable.Type.Name.ToSnakeCase().ToLower();
 
