@@ -101,7 +101,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                 if (Regex.Match(value.ToString(), patternSeparate).Success)
                 {
                     var arrayValues = Regex.Split(value.ToString(), patternSeparate);
-                    if (Utilities.TypeExtensions.IsNumber(type))
+                    if (Utilities.TypeExtensions.IsNumber(type) || type.IsEnum)
                     {
                         select = string.Format("@{0}.Contains(int({1}))", index, key);
                         values.Add(Array.ConvertAll(arrayValues, s => int.Parse(s)));
@@ -133,7 +133,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                         }
 
                     }
-                    else if (Utilities.TypeExtensions.IsNumber(type))
+                    else if (Utilities.TypeExtensions.IsNumber(type) || type.IsEnum)
                     {
                         appendKey = false;
                         values.Add(value.ToString());

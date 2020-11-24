@@ -24,8 +24,6 @@ using System.Reflection;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.Extensions.Options;
 using SER.Graphql.Reflection.NetCore.Builder;
-using Grpc.Net.Client;
-using Grpc.Core;
 
 namespace SER.Graphql.Reflection.NetCore
 {
@@ -334,7 +332,7 @@ namespace SER.Graphql.Reflection.NetCore
                 var obj = _context.Add(entity);
                 _context.SaveChanges();
 
-                SendStatus(GraphGrpcStatus.CREATE, GetKey(entity)).Wait();
+                SendStatus(GraphGrpcStatus.CREATE, GetKey(entity));
 
                 return obj.Entity;
             }
@@ -405,7 +403,7 @@ namespace SER.Graphql.Reflection.NetCore
 
                     //_context.Entry(obj).State = EntityState.Modified;
                     _context.SaveChanges();
-                    SendStatus(GraphGrpcStatus.UPDATE, id.ToString()).Wait();
+                    SendStatus(GraphGrpcStatus.UPDATE, id.ToString());
                 }
                 catch (ValidationException exc)
                 {
@@ -515,7 +513,7 @@ namespace SER.Graphql.Reflection.NetCore
 
                 var cacheKeySize = string.Format("_{0}_size", model);
                 _cache.Remove(cacheKeySize);
-                SendStatus(GraphGrpcStatus.DELETE, id.ToString()).Wait();
+                SendStatus(GraphGrpcStatus.DELETE, id.ToString());
             }
             return obj;
         }
@@ -526,32 +524,23 @@ namespace SER.Graphql.Reflection.NetCore
             CREATE, UPDATE, DELETE
         }
 
-        private async Task SendStatus(GraphGrpcStatus action, string id)
+        private void SendStatus(GraphGrpcStatus action, string id)
         {
             if (_optionsDelegate.CurrentValue.EnableStatusMutation)
             {
-                var channel = GrpcChannel.ForAddress(_optionsDelegate.CurrentValue.GRPCUrl);
-                var client = new GraphStatus.GraphStatusClient(channel);
                 try
                 {
-                    var res = await client.RequestStatusAsync(
-                        new GraphStatusRequest
-                        {
-                            ClassName = typeof(T).Name,
-                            Action = (int)action,
-                            Id = id,
-                            CompanyId = GetCompanyIdUser()
-                        });
-                }
-                catch (RpcException e)
-                {
-                    _logger.LogError($"error RPC : {e}");
-                    // Grpc.Core.StatusCode.Unknown
-                    throw;
+                    _optionsDelegate.CurrentValue.CallbackStatus.Invoke(new GraphStatusRequest
+                    {
+                        ClassName = typeof(T).Name,
+                        Action = (int)action,
+                        Id = id,
+                        CompanyId = GetCompanyIdUser()
+                    });
                 }
                 catch (Exception e)
                 {
-                    _logger.LogError($"error RPC : {e}");
+                    _logger.LogError($"error Callback : {e}");
                     throw;
                 }
             }
