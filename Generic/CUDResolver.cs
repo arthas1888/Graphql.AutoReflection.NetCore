@@ -6,6 +6,9 @@ using GraphQL.Validation;
 using Microsoft.AspNetCore.Http;
 using System;
 using SER.Graphql.Reflection.NetCore.Utilities;
+using System.Collections.Generic;
+using System.Text.Json;
+using System.Linq;
 
 namespace SER.Graphql.Reflection.NetCore.Generic
 {
@@ -35,7 +38,14 @@ namespace SER.Graphql.Reflection.NetCore.Generic
 
             if (id.HasValue)
             {
-                var dbEntity = service.Update(id.Value, entity, alias);
+                var argName = context.FieldAst.Arguments.FirstOrDefault(x => x.Name == _type.Name.ToLower().ToSnakeCase());
+                object dbEntity = null;
+                var variable = context.Variables.FirstOrDefault(x => x.Name == (string)argName.Value.Value);
+                if (variable != null && variable.Value.GetType() == typeof(Dictionary<string, object>))
+                    dbEntity = service.Update(id.Value, entity, (Dictionary<string, object>)variable.Value, alias);
+                else
+                    dbEntity = service.Update(id.Value, entity, (Dictionary<string, object>)argName.Value.Value, alias);
+
                 if (dbEntity == null)
                 {
                     GetError(context);

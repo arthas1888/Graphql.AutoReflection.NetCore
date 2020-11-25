@@ -361,39 +361,43 @@ namespace SER.Graphql.Reflection.NetCore
 
         public T Update(int id, T entity, string alias = "")
         {
+            throw new NotImplementedException();
+        }
+
+        public T Update(int id, T entity, Dictionary<string, object> dict, string alias = "")
+        {
             var obj = GetModel.Find(id);
             if (obj != null)
             {
                 nameModel = $"update_{nameModel}";
                 try
                 {
-                    foreach (var propertyInfo in typeof(T).GetProperties())
+                    foreach (var values in dict)
                     {
                         try
                         {
+                            var propertyInfo = typeof(T).GetProperty(values.Key);
                             if (propertyInfo.Name == "id") continue;
 
                             var oldValue = propertyInfo.GetValue(obj);
                             var newValue = propertyInfo.GetValue(entity);
                             if (propertyInfo.Name == "update_date") newValue = DateTime.Now;
 
-                            if (newValue == null && oldValue != null) continue;
-                            //if (newValue == oldValue) continue;
+                            // if (newValue == null && oldValue != null) continue;
+                            // if (newValue == oldValue) continue;
 
                             Type type = null;
                             var isList = propertyInfo.PropertyType.Name.Contains("List");
                             if (isList)
                                 type = propertyInfo.PropertyType.GetGenericArguments().Count() > 0 ?
                                     propertyInfo.PropertyType.GetGenericArguments()[0] : propertyInfo.PropertyType;
+
                             if (isList && type.BaseType == typeof(object) && newValue != null)
                                 DeleteRelationsM2M(type, id);
 
                             //Console.WriteLine($"___________TRACEEEEEEEEEEEEEEEEE____________: key: {propertyInfo.Name} {oldValue} {newValue}");
-                            var currentpropertyInfo = obj.GetType().GetProperty(propertyInfo.Name);
-                            if (currentpropertyInfo != null)
-                            {
-                                currentpropertyInfo.SetValue(obj, newValue, null);
-                            }
+                            propertyInfo.SetValue(obj, newValue, null);
+
                         }
                         catch (Exception e)
                         {
@@ -409,7 +413,7 @@ namespace SER.Graphql.Reflection.NetCore
                 {
                     _logger.LogError(exc, $"{nameof(Update)} validation exception: {exc?.Message}");
                     _fillDataExtensions.Add($"{(string.IsNullOrEmpty(alias) ? nameModel : alias)}", @$"{id} => { exc?.Message}");
-                    _context.Entry(entity).State = EntityState.Detached;
+                    _context.Entry(obj).State = EntityState.Detached;
 
                 }
                 catch (DbUpdateException e)
@@ -441,6 +445,8 @@ namespace SER.Graphql.Reflection.NetCore
             var iQueryable = _context.Set<M>();
             var keyProperty = typeof(M).GetProperties();
             var paramFK = "";
+            Type valueType = null;
+
             foreach (var prop in typeof(M).GetProperties())
             {
                 var field = prop.PropertyType;
@@ -455,9 +461,12 @@ namespace SER.Graphql.Reflection.NetCore
                         .Where(x => x.GetType() == typeof(ForeignKeyAttribute))
                         .Select(attr => ((ForeignKeyAttribute)attr).Name)
                         .FirstOrDefault();
+                    valueType = field;
                     break;
                 }
             }
+            //Console.WriteLine($"----------------------------------llega aca!!!!!!!!!!!!!!!! parentId {parentId} paramFK {paramFK} paramType {valueType}");
+
             //var paramToEvaluate = typeof(M).GetProperties().FirstOrDefault(x => x.PropertyType.Name == paramFK).PropertyType;
             //if (paramToEvaluate.IsGenericType && paramToEvaluate.GetGenericTypeDefinition() == typeof(Nullable<>))
             //{
@@ -466,21 +475,24 @@ namespace SER.Graphql.Reflection.NetCore
             //}
             if (!string.IsNullOrEmpty(paramFK))
             {
-                var expToEvaluate = EqualPredicate<M>(typeof(M), paramFK, parentId);
+                valueType = typeof(M).GetProperty(paramFK).PropertyType;
+                var expToEvaluate = EqualPredicate<M>(typeof(M), paramFK, parentId, valueType);
                 iQueryable.RemoveRange(iQueryable.Where(expToEvaluate));
-                _context.SaveChanges();
+                // _context.SaveChanges();
             }
         }
 
-        private Expression<Func<M, bool>> EqualPredicate<M>(Type type, string propertyName, object value) where M : class
+        private Expression<Func<M, bool>> EqualPredicate<M>(Type type, string propertyName, object value, Type valueType) where M : class
         {
             var parameter = Expression.Parameter(type, "x");
             // x => x.id == value
             //     |___|
             var property = Expression.Property(parameter, propertyName);
+
             // x => x.id == value
             //             |__|
-            var numberValue = Expression.Constant(value);
+            var numberValue = Expression.Convert(Expression.Constant(value), valueType); // Expression.Constant(value);
+
             // x => x.id == value
             //|________________|
             var exp = Expression.Equal(property, numberValue);
@@ -561,6 +573,7 @@ namespace SER.Graphql.Reflection.NetCore
 
             return cacheEntry;
         }
+
         #endregion
     }
 

@@ -16,6 +16,7 @@ namespace SER.Graphql.Reflection.NetCore
           string whereArgs = "", params object[] args);
         T Create(T entity, string alias = "");
         T Update(int id, T entity, string alias = "");
+        T Update(int id, T entity, Dictionary<string, object> dict, string alias = "");
         T Delete(int id, string alias = "");
     }
 }
