@@ -91,7 +91,6 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             if (matchEnum.Success) key = Regex.Replace(key, patternEnum, "");
 
             if (matchOr.Success) filterWithOr = true;
-
             if (matchStr.Success || filterWithOr)
             {
                 if (filterWithOr) key = Regex.Replace(key, patternOr, "");
@@ -116,7 +115,13 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                 }
                 else
                 {
-                    if (type == typeof(string))
+                    if (Utilities.TypeExtensions.IsNumber(type) || type.IsEnum)
+                    {
+                        appendKey = false;
+                        values.Add(value.ToString());
+                        select = string.Format("string(object({0})).Contains(@{1})", key, index);
+                    }
+                    else if (type == typeof(string))
                     {
                         if (key.Contains("."))
                         {
@@ -132,12 +137,6 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                             appendKey = false;
                         }
 
-                    }
-                    else if (Utilities.TypeExtensions.IsNumber(type) || type.IsEnum)
-                    {
-                        appendKey = false;
-                        values.Add(value.ToString());
-                        select = string.Format("string(object({0})).Contains(@{1})", key, index);
                     }
                     else
                     {
@@ -349,31 +348,43 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             where TRole : class
             where TUserRole : class
         {
-            if (key.Contains("__model__")) key = key.Replace("__model__", ".");
-            if (key.Contains("__list__")) { key = key.Replace("__list__", ".Any("); isList = true; }
+            string keyName = key;
+            if (key.Contains("__model__"))
+            {
+                type = FindChildType(type, keyName.Split("__model__")[0]);
+                keyName = keyName.Replace("__model__", ".");
+            }
+            if (key.Contains("__list__"))
+            {
+                type = FindChildType(type, keyName.Split("__list__")[0]);
+                keyName = keyName.Replace("__list__", ".Any(");
+                isList = true;
+            }
+
             Type fieldLocalType = null;
             var patternStr = @"_iext";
-            Match matchStr = Regex.Match(key, patternStr);
+            Match matchStr = Regex.Match(keyName, patternStr);
 
             var patternOr = @"_iext_or";
-            Match matchOr = Regex.Match(key, patternOr);
+            Match matchOr = Regex.Match(keyName, patternOr);
 
             var patternExtStr = @"_ext";
-            Match matchExtStr = Regex.Match(key, patternExtStr);
+            Match matchExtStr = Regex.Match(keyName, patternExtStr);
 
             var patternIsNullStr = @"_isnull";
-            Match matchIsNulltStr = Regex.Match(key, patternIsNullStr);
+            Match matchIsNulltStr = Regex.Match(keyName, patternIsNullStr);
 
             var patternEnum = @"_enum";
-            Match matchIsEnum = Regex.Match(key, patternEnum);
+            Match matchIsEnum = Regex.Match(keyName, patternEnum);
 
             if (matchStr.Success || matchExtStr.Success || matchIsNulltStr.Success || matchOr.Success || matchIsEnum.Success)
             {
-                var fieldName = "";
+                var fieldName = "";               
+
                 if (matchOr.Success)
-                    fieldName = Regex.Replace(key, patternOr, "");
+                    fieldName = Regex.Replace(keyName, patternOr, "");
                 else if (matchStr.Success)
-                    fieldName = Regex.Replace(key, patternStr, "");
+                    fieldName = Regex.Replace(keyName, patternStr, "");
                 if (matchExtStr.Success)
                     fieldName = Regex.Replace(fieldName, patternExtStr, "");
                 if (matchIsNulltStr.Success)
@@ -387,6 +398,15 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                     )
                     fieldName = FirstLetterToUpper(fieldName);
 
+                if (key.Contains("__model__"))
+                {
+                    fieldName = fieldName.Split(".")[1];
+                }
+                if (key.Contains("__list__"))
+                {
+                    fieldName = fieldName.Split(".Any(")[1];
+                }
+
                 foreach (var (propertyInfo, j) in type.GetProperties().Select((v, j) => (v, j)))
                 {
                     if (propertyInfo.Name == fieldName)
@@ -397,12 +417,27 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                         break;
                     }
                 }
-                //Console.WriteLine($"=================================type {type} name {key} fieldName {fieldName} isList {isList} fieldLocalType {fieldLocalType} =========================");
+                //Console.WriteLine($"=================================type {type} name {keyName} fieldName {fieldName} isList {isList} fieldLocalType {fieldLocalType} =========================");
             }
 
-            ConcatFilter(args, whereArgs, i, alias != null ? isList ? $"{alias}{key}" : $"{alias}.{key}" : key, value,
+            ConcatFilter(args, whereArgs, i, alias != null ? isList ? $"{alias}{keyName}" : $"{alias}.{keyName}" : keyName, value,
                 type: fieldLocalType, isList: isList, modelType: type);
+        }
 
+        private static Type FindChildType(Type type, string key)
+        {
+            Type fieldLocalType = null;
+            foreach (var (propertyInfo, j) in type.GetProperties().Select((v, j) => (v, j)))
+            {
+                if (propertyInfo.Name == key)
+                {
+                    fieldLocalType = propertyInfo.PropertyType;
+                    if (fieldLocalType.IsGenericType && fieldLocalType.GetGenericTypeDefinition() == typeof(Nullable<>))
+                        fieldLocalType = fieldLocalType.GetGenericArguments()[0];
+                    break;
+                }
+            }
+            return fieldLocalType;
         }
 
         public static Type ResolveGraphType(Type type)
