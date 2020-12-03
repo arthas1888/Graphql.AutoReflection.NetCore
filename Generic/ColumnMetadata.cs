@@ -12,5 +12,6 @@ namespace SER.Graphql.Reflection.NetCore.Generic
         public bool IsNull { get; set; }
         public Type Type { get; set; }
         public bool IsList { get; set; }
+        public bool IsJson { get; set; }
     }
 }

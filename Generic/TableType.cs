@@ -66,7 +66,21 @@ namespace SER.Graphql.Reflection.NetCore
             //if (parentType.Name == "ApplicationUser")
             //    Console.WriteLine($"{mainTableColumn.ColumnName} GraphType: {GraphUtils.ResolveGraphType(mainTableColumn.Type)} Type: {mainTableColumn.Type} IsList {mainTableColumn.IsList}");
             // instancias internas
-            if (mainTableColumn.IsList)    // incluye litas de cada objeto
+            if (mainTableColumn.IsJson)    // incluye litas de cada objeto
+            {
+                Field(
+                   typeof(string).GetGraphTypeFromType(true),
+                   mainTableColumn.ColumnName,
+                   resolve: context =>
+                   {
+                       dynamic value = context.Source.GetPropertyValue(mainTableColumn.ColumnName);
+                       if (value == null) return null;
+                       return System.Text.Json.JsonSerializer.Serialize(value);
+                   }
+                );
+                FillArgs(mainTableColumn.ColumnName, mainTableColumn.Type);
+            }
+            else if (mainTableColumn.IsList)    // incluye litas de cada objeto
             {
                 var queryThirdArguments = new QueryArguments();
                 queryThirdArguments.Add(new QueryArgument<IntGraphType> { Name = "first" });
@@ -141,8 +155,19 @@ namespace SER.Graphql.Reflection.NetCore
 
         private void InitGraphTableColumn(ColumnMetadata columnMetadata, dynamic objectGraphType, QueryArguments queryArguments)
         {
-            // incluye listas de cada objeto
-            if (columnMetadata.IsList)
+            if (columnMetadata.IsJson)    
+            {
+                objectGraphType.AddField(
+                   new FieldType
+                   {
+                       Type = typeof(string).GetGraphTypeFromType(true),
+                       Name = columnMetadata.ColumnName,
+                       Resolver = new JsonResolver(columnMetadata.ColumnName)
+                   }
+                );
+                FillArguments(queryArguments, columnMetadata.ColumnName, columnMetadata.Type);
+            }
+            else if (columnMetadata.IsList) // incluye litas de cada objeto
             {
                 try
                 {
@@ -170,7 +195,7 @@ namespace SER.Graphql.Reflection.NetCore
                     FillArguments(queryArguments, columnMetadata.ColumnName, columnMetadata.Type);
                 }
             }
-            else if (typeof(IBaseModel).IsAssignableFrom(columnMetadata.Type) 
+            else if (typeof(IBaseModel).IsAssignableFrom(columnMetadata.Type)
                 || _dbMetadata.GetTableMetadatas().Any(x => x.Type == columnMetadata.Type))
             {
                 var queryThirdArguments = new QueryArguments
@@ -312,7 +337,19 @@ namespace SER.Graphql.Reflection.NetCore
 
                 foreach (var tableColumn in metaTable.Columns)
                 {
-                    if (tableColumn.IsList)
+                    if (tableColumn.IsJson)
+                    {
+                        objectGraphInternal.AddField(
+                           new FieldType
+                           {
+                               Type = typeof(string).GetGraphTypeFromType(true),
+                               Name = tableColumn.ColumnName,
+                               Resolver = new JsonResolver(tableColumn.ColumnName)
+                           }
+                        );
+                        FillArguments(queryArguments, tableColumn.ColumnName, tableColumn.Type);
+                    }
+                    else if (tableColumn.IsList)
                     {
                         try
                         {
@@ -555,6 +592,24 @@ namespace SER.Graphql.Reflection.NetCore
             var value = context.Source.GetPropertyValue(_nameField);
             if (value == null) return null;
             return ((TimeSpan)value).ToString();
+        }
+
+    }
+
+    public class JsonResolver : IFieldResolver
+    {
+        private string _nameField;
+
+        public JsonResolver(string nameField)
+        {
+            _nameField = nameField;
+        }
+
+        public object Resolve(IResolveFieldContext context)
+        {
+            var value = context.Source.GetPropertyValue(_nameField);
+            if (value == null) return null;
+            return System.Text.Json.JsonSerializer.Serialize(value);
         }
 
     }

@@ -123,7 +123,10 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                     if (isList)
                         field = propertyType.PropertyType.GetGenericArguments().Count() > 0 ? propertyType.PropertyType.GetGenericArguments()[0] : propertyType.PropertyType;
 
-                    //Console.WriteLine($"Columna de la tabla: {entityType.GetTableName()} Name: {propertyType.Name} " +
+                    var isJson = propertyType.GetCustomAttributes(true)
+                        .Where(x => x.GetType() == typeof(ColumnAttribute) && ((ColumnAttribute)x).TypeName == "jsonb")
+                        .FirstOrDefault();
+                    //Console.WriteLine($"Columna de la tabla: {entityType.GetTableName()} Name: {propertyType.Name} isJson {isJson} ");
                     //    $"Type: {propertyType.GetType()} type3: {propertyType.Name} {field?.Name}");
                     if (propertyType.GetCustomAttributes(true)
                            .Any(x => x.GetType() == typeof(NotMappedAttribute))) continue;
@@ -133,7 +136,8 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                         DataType = propertyType.Name == "id" ? "uniqueidentifier" : field.Name,
                         IsNull = field != null,
                         Type = field ?? propertyType.GetType(),
-                        IsList = isList
+                        IsList = isList,
+                        IsJson = isJson != null
                     });
                 }
             }
@@ -147,7 +151,8 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                         DataType = propertyType.GetRelationalTypeMapping().ClrType.Name,
                         IsNull = false,
                         Type = propertyType.GetRelationalTypeMapping().ClrType,
-                        IsList = false
+                        IsList = false,
+                        IsJson = false
                     };
                     tableColumns.Add(columnMetadata);
                     //Console.WriteLine($"columnMetadata info {JObject.FromObject(columnMetadata)}");

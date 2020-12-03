@@ -13,6 +13,8 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using SER.Graphql.Reflection.NetCore.Utilities;
+using System.Text.Json.Serialization;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SER.Graphql.Reflection.NetCore.Generic
 {
@@ -38,8 +40,8 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                 foreach (var propertyInfo in typeof(T).GetProperties())
                 {
                     //Console.WriteLine($"_________________TRACEEEEEEEEEEEEEEEEE____________: key: {propertyInfo.Name} value: {propertyInfo.PropertyType.Name}");
-                    if (!propertyInfo.GetCustomAttributes(true).Any(x => x.ToString() == "System.Text.Json.Serialization.JsonIgnoreAttribute")
-                        && !propertyInfo.GetCustomAttributes(true).Any(x => x.ToString() == "System.ComponentModel.DataAnnotations.Schema.NotMappedAttribute")
+                    if (!propertyInfo.GetCustomAttributes(true).Any(x => x.GetType() == typeof(JsonIgnoreAttribute))
+                        && !propertyInfo.GetCustomAttributes(true).Any(x => x.GetType() == typeof(NotMappedAttribute))
                         && !propertyInfo.PropertyType.Name.Contains("List"))
                         properties.Add(propertyInfo.Name, propertyInfo.PropertyType);
                 }

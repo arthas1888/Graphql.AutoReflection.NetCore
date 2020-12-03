@@ -11,6 +11,8 @@ using GraphQL;
 using GraphQL.Language.AST;
 using GraphQL.Types;
 using Microsoft.AspNetCore.Identity;
+using System.Text.Json.Serialization;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SER.Graphql.Reflection.NetCore.Generic
 {
@@ -25,8 +27,8 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             whereArgs.Append("( ");
             foreach (var (propertyInfo, j) in type.GetProperties().Select((v, j) => (v, j)))
             {
-                if (!propertyInfo.GetCustomAttributes(true).Any(x => x.ToString() == "System.Text.Json.Serialization.JsonIgnoreAttribute")
-                    && !propertyInfo.GetCustomAttributes(true).Any(x => x.ToString() == "System.ComponentModel.DataAnnotations.Schema.NotMappedAttribute")
+                if (!propertyInfo.GetCustomAttributes(true).Any(x => x.GetType() == typeof(JsonIgnoreAttribute))
+                    && !propertyInfo.GetCustomAttributes(true).Any(x => x.GetType() == typeof(NotMappedAttribute))
                     && !propertyInfo.PropertyType.Name.Contains("List"))
                 {
                     var key = propertyInfo.Name;
@@ -379,7 +381,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
 
             if (matchStr.Success || matchExtStr.Success || matchIsNulltStr.Success || matchOr.Success || matchIsEnum.Success)
             {
-                var fieldName = "";               
+                var fieldName = "";
 
                 if (matchOr.Success)
                     fieldName = Regex.Replace(keyName, patternOr, "");
