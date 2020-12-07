@@ -387,6 +387,8 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                     fieldName = Regex.Replace(keyName, patternOr, "");
                 else if (matchStr.Success)
                     fieldName = Regex.Replace(keyName, patternStr, "");
+                else fieldName = keyName;
+
                 if (matchExtStr.Success)
                     fieldName = Regex.Replace(fieldName, patternExtStr, "");
                 if (matchIsNulltStr.Success)
