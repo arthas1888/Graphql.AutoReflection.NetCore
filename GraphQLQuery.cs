@@ -51,7 +51,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                 {
                     var inherateType = typeof(TableType<>).MakeGenericType(new Type[] { metaTable.Type });
                     objectGraphType = Activator.CreateInstance(inherateType, new object[] { metaTable,
-                        _dbMetadata, _tableNameLookup, _httpContextAccessor, _accessor, _optionsDelegate, false });
+                        _dbMetadata, _tableNameLookup, _httpContextAccessor, _accessor, _optionsDelegate });
                 }
 
                 var tableType = _tableNameLookup.GetOrInsertGraphType(metaTable.Type.Name, objectGraphType);

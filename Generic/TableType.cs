@@ -26,7 +26,6 @@ namespace SER.Graphql.Reflection.NetCore
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IDataLoaderContextAccessor _accessor;
         private readonly IOptionsMonitor<SERGraphQlOptions> _optionsDelegate;
-        private bool _crud;
 
         public QueryArguments TableArgs { get; set; }
 
@@ -36,10 +35,8 @@ namespace SER.Graphql.Reflection.NetCore
             ITableNameLookup tableNameLookup,
             IHttpContextAccessor httpContextAccessor,
             IDataLoaderContextAccessor accessor,
-            IOptionsMonitor<SERGraphQlOptions> optionsDelegate,
-            bool crud = false)
+            IOptionsMonitor<SERGraphQlOptions> optionsDelegate)
         {
-            _crud = crud;
             _tableNameLookup = tableNameLookup;
             _dbMetadata = dbMetadata;
             _accessor = accessor;
@@ -48,10 +45,9 @@ namespace SER.Graphql.Reflection.NetCore
 
             var permission = mainTable.Type.Name.ToLower();
             var friendlyTableName = _tableNameLookup.GetFriendlyName(mainTable.Type.Name.ToSnakeCase());
-            if (crud)
-                this.RequirePermissions($"{permission}.add", $"{permission}.update", $"{permission}.delete");
-            else
-                this.ValidatePermissions(permission, friendlyTableName, mainTable.Type, _optionsDelegate);
+
+            this.ValidateCUDPermissions(permission);
+            this.ValidatePermissions(permission, friendlyTableName, mainTable.Type, _optionsDelegate);
 
             Name = mainTable.TableName;
 
@@ -155,7 +151,7 @@ namespace SER.Graphql.Reflection.NetCore
 
         private void InitGraphTableColumn(ColumnMetadata columnMetadata, dynamic objectGraphType, QueryArguments queryArguments)
         {
-            if (columnMetadata.IsJson)    
+            if (columnMetadata.IsJson)
             {
                 objectGraphType.AddField(
                    new FieldType

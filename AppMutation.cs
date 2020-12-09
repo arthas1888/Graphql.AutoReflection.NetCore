@@ -8,6 +8,7 @@ using System.Linq;
 using GraphQL.Authorization;
 using Microsoft.Extensions.Options;
 using SER.Graphql.Reflection.NetCore.Builder;
+using GraphQL.DataLoader;
 
 namespace SER.Graphql.Reflection.NetCore
 {
@@ -17,18 +18,21 @@ namespace SER.Graphql.Reflection.NetCore
         private readonly IHttpContextAccessor _httpContextAccessor;
         private ITableNameLookup _tableNameLookup;
         private readonly IOptionsMonitor<SERGraphQlOptions> _optionsDelegate;
+        private readonly IDataLoaderContextAccessor _accessor;
 
         public AppMutation(
             IDatabaseMetadata dbMetadata,
             ITableNameLookup tableNameLookup,
             IHttpContextAccessor httpContextAccessor,
-            IOptionsMonitor<SERGraphQlOptions> optionsDelegate
+            IOptionsMonitor<SERGraphQlOptions> optionsDelegate,
+            IDataLoaderContextAccessor accessor
             )
         {
             _dbMetadata = dbMetadata;
             _httpContextAccessor = httpContextAccessor;
             _tableNameLookup = tableNameLookup;
             _optionsDelegate = optionsDelegate;
+            _accessor = accessor;
 
             this.AuthorizeWith("Authorized");
 
@@ -47,7 +51,7 @@ namespace SER.Graphql.Reflection.NetCore
                 {
                     var inherateType = typeof(TableType<>).MakeGenericType(new Type[] { metaTable.Type });
                     objectGraphType = Activator.CreateInstance(inherateType, new object[] { metaTable,
-                        _dbMetadata, _tableNameLookup, _httpContextAccessor, false });
+                        _dbMetadata, _tableNameLookup, _httpContextAccessor, _accessor, _optionsDelegate });
                 }
 
                 var tableType = _tableNameLookup.GetOrInsertGraphType(metaTable.Type.Name, objectGraphType);

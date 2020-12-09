@@ -82,10 +82,10 @@ namespace SER.Graphql.Reflection.NetCore
                 if (!typesWithoutPermission.Contains(permission) &&
                     !typesWithoutPermission.Contains(friendlyTableName))
                 {
-                    var otherPerms = GetOtherPermissions().Where(x => x.Name == permission).SelectMany(x => x.Permissions).ToArray();
-                    type.RequirePermissions(otherPerms);
-                    var otherfriendlyPerms = GetOtherPermissions().Where(x => x.Name == friendlyTableName).SelectMany(x => x.Permissions).ToArray();
-                    type.RequirePermissions(otherfriendlyPerms);
+                    var otherPerms = GetOtherPermissions().Where(x => x.Name == permission).SelectMany(x => x.Permissions.View).ToArray();
+                    type.RequirePermissions(otherPerms.Select(x => x + "__VIEW__").ToArray());
+                    var otherfriendlyPerms = GetOtherPermissions().Where(x => x.Name == friendlyTableName).SelectMany(x => x.Permissions.View).ToArray();
+                    type.RequirePermissions(otherfriendlyPerms.Select(x => x + "__VIEW__").ToArray());
 
                     if (mainType == options.CurrentValue.UserType
                         || mainType == options.CurrentValue.RoleType
@@ -95,6 +95,22 @@ namespace SER.Graphql.Reflection.NetCore
                         type.RequirePermissions($"{permission}.view");
                 }
             }
+        }
+
+        public static void ValidateCUDPermissions(this IProvideMetadata type, string permission)
+        {
+            var otherPerms = GetOtherPermissions();
+            var otherPermsAdd = otherPerms.Where(x => x.Name == permission).SelectMany(x => x.Permissions.Add).ToArray();
+            type.RequirePermissions(otherPermsAdd.Select(x => x + "__CREATE__").ToArray());
+            type.RequirePermissions($"{permission}.add");
+
+            var otherPermsUpdate = otherPerms.Where(x => x.Name == permission).SelectMany(x => x.Permissions.Update).ToArray();
+            type.RequirePermissions(otherPermsUpdate.Select(x => x + "__UPDATE__").ToArray());
+            type.RequirePermissions($"{permission}.update");
+
+            var otherPermsDelete = otherPerms.Where(x => x.Name == permission).SelectMany(x => x.Permissions.Delete).ToArray();
+            type.RequirePermissions(otherPermsDelete.Select(x => x + "__DELETE__").ToArray());
+            type.RequirePermissions($"{permission}.delete");
         }
 
         public static void RequirePermissions(this IProvideMetadata type, params string[] permissionsRequired)
