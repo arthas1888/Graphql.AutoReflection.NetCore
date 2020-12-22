@@ -130,7 +130,7 @@ namespace SER.Graphql.Reflection.NetCore
             }
 
             //if (!string.IsNullOrEmpty(policy))
-            AuthorizationMetadataExtensions.AuthorizeWith(type, "Authorized");
+            // AuthorizationMetadataExtensions.AuthorizeWith(type, "Authorized");
         }
 
         public static void RequireAuthentication(this IProvideMetadata type)

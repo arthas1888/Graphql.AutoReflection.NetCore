@@ -100,11 +100,13 @@ namespace SER.Graphql.Reflection.NetCore
                 TableArgs.Add(new QueryArgument<IdGraphType> { Name = "id" });
                 TableArgs.Add(new QueryArgument<StringGraphType> { Name = "id_iext" });
                 TableArgs.Add(new QueryArgument<StringGraphType> { Name = "id_iext_or" });
+                TableArgs.Add(new QueryArgument<IdGraphType> { Name = $"{columnName}_exclude" });
             }
             else
             {
                 var queryArgument = new QueryArgument(GraphUtils.ResolveGraphType(type)) { Name = columnName };
                 TableArgs.Add(queryArgument);
+                TableArgs.Add(new QueryArgument(GraphUtils.ResolveGraphType(type)) { Name = $"{columnName}_exclude" });
 
                 if (type == typeof(DateTime?) || type == typeof(DateTime))
                 {

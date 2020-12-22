@@ -493,11 +493,13 @@ namespace SER.Graphql.Reflection.NetCore
                 TableArgs.Add(new QueryArgument<IdGraphType> { Name = "id" });
                 TableArgs.Add(new QueryArgument<StringGraphType> { Name = "id_iext" });
                 TableArgs.Add(new QueryArgument<StringGraphType> { Name = "id_iext_or" });
+                TableArgs.Add(new QueryArgument<IdGraphType> { Name = $"{columnName}_exclude" });
             }
             else
             {
                 var queryArgument = new QueryArgument(GraphUtils.ResolveGraphType(type)) { Name = columnName };
                 TableArgs.Add(queryArgument);
+                TableArgs.Add(new QueryArgument(GraphUtils.ResolveGraphType(type)) { Name = $"{columnName}_exclude" });
 
                 if (type == typeof(DateTime?) || type == typeof(DateTime))
                 {
@@ -539,11 +541,14 @@ namespace SER.Graphql.Reflection.NetCore
                 queryArguments.Add(new QueryArgument<IdGraphType> { Name = "id" });
                 queryArguments.Add(new QueryArgument<StringGraphType> { Name = "id_iext" });
                 queryArguments.Add(new QueryArgument<StringGraphType> { Name = "id_iext_or" });
+                queryArguments.Add(new QueryArgument<IdGraphType> { Name = $"{columnName}_exclude" });
             }
             else
             {
                 var queryArgument = new QueryArgument(GraphUtils.ResolveGraphType(type)) { Name = columnName };
                 queryArguments.Add(queryArgument);
+                queryArguments.Add(new QueryArgument(GraphUtils.ResolveGraphType(type)) { Name = $"{columnName}_exclude" });
+
                 if (type == typeof(DateTime?) || type == typeof(DateTime))
                 {
                     queryArguments.Add(new QueryArgument<DateTimeGraphType> { Name = $"{columnName}_gt" });

@@ -88,6 +88,9 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             var patternIsNullStr = @"_isnull";
             Match matchIsNullStr = Regex.Match(key, patternIsNullStr);
 
+            var patternExcludeStr = @"_exclude";
+            Match matchExcludStr = Regex.Match(key, patternExcludeStr);
+
             var patternEnum = @"_enum";
             Match matchEnum = Regex.Match(key, patternEnum);
             if (matchEnum.Success) key = Regex.Replace(key, patternEnum, "");
@@ -159,7 +162,12 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                 key = Regex.Replace(key, patternIsNullStr, "");
                 values.Add(null);
                 select = string.Format(" {0} @{1}", ((bool)value) ? "==" : "!=", index);
-
+            }
+            else if (matchExcludStr.Success)
+            {
+                key = Regex.Replace(key, patternExcludeStr, "");
+                values.Add(value);
+                select = string.Format(" != @{0}", index);
             }
             else
             {
@@ -376,10 +384,13 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             var patternIsNullStr = @"_isnull";
             Match matchIsNulltStr = Regex.Match(keyName, patternIsNullStr);
 
+            var patternExcludeStr = @"_exclude";
+            Match matchExcludStr = Regex.Match(key, patternExcludeStr);
+
             var patternEnum = @"_enum";
             Match matchIsEnum = Regex.Match(keyName, patternEnum);
 
-            if (matchStr.Success || matchExtStr.Success || matchIsNulltStr.Success || matchOr.Success || matchIsEnum.Success)
+            if (matchStr.Success || matchExtStr.Success || matchIsNulltStr.Success || matchOr.Success || matchIsEnum.Success || matchExcludStr.Success)
             {
                 var fieldName = "";
 
@@ -395,6 +406,8 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                     fieldName = Regex.Replace(fieldName, patternIsNullStr, "");
                 if (matchIsEnum.Success)
                     fieldName = Regex.Replace(fieldName, patternEnum, "");
+                if (matchExcludStr.Success)
+                    fieldName = Regex.Replace(fieldName, patternExcludeStr, "");
 
                 if ((type == typeof(TUser) && typeof(IdentityUser).IsAssignableFrom(typeof(TUser)))
                     || (type == typeof(TRole) && typeof(IdentityRole).IsAssignableFrom(typeof(TRole)))
