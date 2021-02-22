@@ -12,6 +12,7 @@ using SER.Graphql.Reflection.NetCore.Models;
 using Microsoft.Extensions.Options;
 using SER.Graphql.Reflection.NetCore.Builder;
 using System.ComponentModel.DataAnnotations;
+using SER.Utilitties.NetCore.Models;
 
 namespace SER.Graphql.Reflection.NetCore.Generic
 {
@@ -73,6 +74,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                 }
                 var elementType = assembly.GetTypes().Where(x => !x.IsAbstract && typeof(IBaseModel).IsAssignableFrom(x))
                     .FirstOrDefault(x => x == entityType.ClrType);
+
                 if (elementType == null)
                 {
                     elementType = assembly.GetTypes().Where(x => !x.IsAbstract).FirstOrDefault(x =>
@@ -100,6 +102,18 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                 });
                 _tableNameLookup.InsertKeyName(elementType.Name.ToSnakeCase());
 
+            }
+            if (_optionsDelegate.CurrentValue.EnableAudit)
+            {
+                metaTables.Add(new TableMetadata
+                {
+                    TableName = nameof(Audit),
+                    AssemblyFullName = typeof(Audit).FullName,
+                    Columns = GetColumnsMetadata(null, typeof(Audit)),
+                    Type = typeof(Audit),
+                    NamePK = nameof(Audit.id)
+                });
+                _tableNameLookup.InsertKeyName(typeof(Audit).Name.ToSnakeCase());
             }
 
             return metaTables;

@@ -24,6 +24,8 @@ using System.Reflection;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.Extensions.Options;
 using SER.Graphql.Reflection.NetCore.Builder;
+using SER.Utilitties.NetCore.Managers;
+using SER.Utilitties.NetCore.Models;
 
 namespace SER.Graphql.Reflection.NetCore
 {
@@ -43,6 +45,7 @@ namespace SER.Graphql.Reflection.NetCore
         private readonly ILogger _logger;
         public string model;
         public string nameModel;
+        private readonly AuditManager _cRepositoryLog;
         public static readonly ILoggerFactory MyLoggerFactory = LoggerFactory.Create(builder =>
         {
             builder
@@ -69,6 +72,7 @@ namespace SER.Graphql.Reflection.NetCore
             _fillDataExtensions = fillDataExtensions;
             _dataLoader = dataLoader;
             _optionsDelegate = optionsDelegate;
+            _cRepositoryLog = httpContextAccessor.HttpContext.RequestServices.GetService<AuditManager>();
         }
 
         public string GetCompanyIdUser()
@@ -309,7 +313,7 @@ namespace SER.Graphql.Reflection.NetCore
             get { return _context.Set<T>(); }
         }
 
-        public T Create(T entity, string alias = "")
+        public async Task<T> Create(T entity, string alias = "")
         {
             // var objstr = JsonSerializer.Serialize(entity);
             //_logger.LogInformation($"----------------------------objstr {objstr}");
@@ -319,18 +323,19 @@ namespace SER.Graphql.Reflection.NetCore
             nameModel = $"create_{nameModel}";
             try
             {
-                foreach (var propertyInfo in typeof(T).GetProperties())
-                {
-                    try
-                    {
-                        var newValue = propertyInfo.GetValue(entity);
-                        if (propertyInfo.Name == "created_by") newValue = GetCompanyIdUser();
-                    }
-                    catch (Exception) { }
-                }
+                entity.GetType().GetProperty("created_by_id")?.SetValue(entity, GetCurrentUser(), null);
 
                 var obj = _context.Add(entity);
                 _context.SaveChanges();
+
+                if (_optionsDelegate.CurrentValue.EnableAudit)
+                {
+                    await _cRepositoryLog.AddLog(_context, new AuditBinding()
+                    {
+                        action = AudiState.CREATE,
+                        objeto = typeof(T).Name,
+                    }, id: GetKey(entity), commit: true);
+                }
 
                 SendStatus(GraphGrpcStatus.CREATE, GetKey(entity));
 
@@ -359,12 +364,12 @@ namespace SER.Graphql.Reflection.NetCore
             return entity.GetType().GetProperty(keyName).GetValue(entity, null).ToString();
         }
 
-        public T Update(int id, T entity, string alias = "")
+        public Task<T> Update(int id, T entity, string alias = "")
         {
             throw new NotImplementedException();
         }
 
-        public T Update(int id, T entity, Dictionary<string, object> dict, string alias = "")
+        public async Task<T> Update(int id, T entity, Dictionary<string, object> dict, string alias = "")
         {
             var obj = GetModel.Find(id);
             if (obj != null)
@@ -381,7 +386,6 @@ namespace SER.Graphql.Reflection.NetCore
 
                             var oldValue = propertyInfo.GetValue(obj);
                             var newValue = propertyInfo.GetValue(entity);
-                            if (propertyInfo.Name == "update_date") newValue = DateTime.Now;
 
                             // if (newValue == null && oldValue != null) continue;
                             // if (newValue == oldValue) continue;
@@ -403,6 +407,21 @@ namespace SER.Graphql.Reflection.NetCore
                         {
                             Console.WriteLine(e.Message);
                         }
+                    }
+
+                    if (_optionsDelegate.CurrentValue.EnableAudit)
+                    {
+                        var modified = await _cRepositoryLog.AddLog(_context, new AuditBinding()
+                        {
+                            action = AudiState.UPDATE,
+                            objeto = typeof(T).Name,
+                        }, id: id.ToString());
+                        var propertyInfo = typeof(T).GetProperties().FirstOrDefault(x => x.Name == "last_movement");
+                        if (propertyInfo != null)
+                            obj.GetType().GetProperty(propertyInfo.Name)?.SetValue(obj, modified, null);
+
+                        obj.GetType().GetProperty("update_date")?.SetValue(obj, DateTime.UtcNow, null);
+                        obj.GetType().GetProperty("updated_by_id")?.SetValue(obj, GetCurrentUser(), null);
                     }
 
                     //_context.Entry(obj).State = EntityState.Modified;
@@ -499,7 +518,7 @@ namespace SER.Graphql.Reflection.NetCore
             return Expression.Lambda<Func<M, bool>>(exp, parameter);
         }
 
-        public T Delete(int id, string alias = "")
+        public async Task<T> Delete(int id, string alias = "")
         {
             var obj = GetModel.Find(id);
             if (obj != null)
@@ -510,6 +529,15 @@ namespace SER.Graphql.Reflection.NetCore
                     //GetModel.Remove(obj);
                     _context.Entry(obj).State = EntityState.Deleted;
                     _context.SaveChanges();
+
+                    if (_optionsDelegate.CurrentValue.EnableAudit)
+                    {
+                        await _cRepositoryLog.AddLog(_context, new AuditBinding()
+                        {
+                            action = AudiState.DELETE,
+                            objeto = typeof(T).Name,
+                        }, id: id.ToString(), commit: true);
+                    }
                 }
                 catch (ValidationException exc)
                 {

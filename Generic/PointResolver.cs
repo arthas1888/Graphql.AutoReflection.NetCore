@@ -19,9 +19,10 @@ namespace SER.Graphql.Reflection.NetCore.Generic
 
         public object Resolve(IResolveFieldContext context)
         {
-            Point point = (Point)context.Source.GetPropertyValue(_nameField);
-            Console.WriteLine($"point {point} {context.Source.GetPropertyValue(_nameField).GetType()}");
-            return JsonExtensions.SerializeWithGeoJson<Point>(point, formatting: Formatting.None);
+            dynamic point = context.Source.GetPropertyValue(_nameField);
+            if (point == null) return null;
+            return JsonExtensions.SerializeWithGeoJson(point, formatting: Formatting.None);
+
         }
 
     }

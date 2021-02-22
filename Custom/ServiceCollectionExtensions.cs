@@ -18,6 +18,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using SER.Graphql.Reflection.NetCore.Builder;
 using Microsoft.EntityFrameworkCore;
+using SER.Utilitties.NetCore.Models;
 
 namespace SER.Graphql.Reflection.NetCore.Custom
 {
@@ -53,6 +54,8 @@ namespace SER.Graphql.Reflection.NetCore.Custom
             services.AddSingleton<DataLoaderDocumentListener>();
 
             services.AddScoped<GraphQLQuery<TUser, TRole, TUserRole>>();
+            services.AddScoped<IGraphRepository<Audit>, GenericGraphRepository<Audit, TContext, TUser, TRole, TUserRole>>();
+
             services.AddScoped<FillDataExtensions>();
             services.AddScoped<ISchema, AppSchema<TUser, TRole, TUserRole>>();
 

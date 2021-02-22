@@ -28,6 +28,7 @@ namespace SER.Graphql.Reflection.NetCore.Builder
         public bool EnableCustomFilter { get; set; }
         public string NameCustomFilter { get; set; }
         public bool EnableStatusMutation { get; set; }
+        public bool EnableAudit { get; set; }
 
         public Action<GraphStatusRequest> CallbackStatus { get; set; }
     }

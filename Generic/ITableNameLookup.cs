@@ -15,8 +15,10 @@ namespace SER.Graphql.Reflection.NetCore.Generic
         bool ExistInputGraphType(string key);
 
         ListGraphType<ObjectGraphType> GetOrInsertListGraphType(string key, ListGraphType<ObjectGraphType> objectGraphType);
+        ListGraphType<ObjectGraphType> GetOrInsertSecondListGraphType(string key, ListGraphType<ObjectGraphType> objectGraphType);
         ListGraphType<InputObjectGraphType> GetOrInsertInputListGraphType(string key, ListGraphType<InputObjectGraphType> objectGraphType);
         bool ExistListGraphType(string key);
+        bool ExistSecondListGraphType(string key);
         bool ExistInputListGraphType(string key);
 
         string GetFriendlyName(string correctName);
@@ -28,6 +30,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
         private IDictionary<string, dynamic> _graphTypeDict = new Dictionary<string, dynamic>();
         private IDictionary<string, dynamic> _inputGraphTypeDict = new Dictionary<string, dynamic>();
         private IDictionary<string, ListGraphType<ObjectGraphType>> _listGraphTypeDict = new Dictionary<string, ListGraphType<ObjectGraphType>>();
+        private IDictionary<string, ListGraphType<ObjectGraphType>> _secondListGraphTypeDict = new Dictionary<string, ListGraphType<ObjectGraphType>>();
         private IDictionary<string, ListGraphType<InputObjectGraphType>> _inputListGraphTypeDict = new Dictionary<string, ListGraphType<InputObjectGraphType>>();
 
         public bool ExistGraphType(string key)
@@ -88,9 +91,24 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             return _listGraphTypeDict[key];
         }
 
+        public ListGraphType<ObjectGraphType> GetOrInsertSecondListGraphType(string key, ListGraphType<ObjectGraphType> objectGraphType)
+        {
+            if (!_secondListGraphTypeDict.ContainsKey(key))
+            {
+                // Console.WriteLine("Table agregada en diccionario lista cache: " + key);
+                _secondListGraphTypeDict.Add(key, objectGraphType);
+            }
+            return _secondListGraphTypeDict[key];
+        }
+
         public bool ExistListGraphType(string key)
         {
             return _listGraphTypeDict.ContainsKey(key);
+        }
+
+        public bool ExistSecondListGraphType(string key)
+        {
+            return _secondListGraphTypeDict.ContainsKey(key);
         }
 
         public ListGraphType<InputObjectGraphType> GetOrInsertInputListGraphType(string key, ListGraphType<InputObjectGraphType> objectGraphType)

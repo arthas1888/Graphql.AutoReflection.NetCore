@@ -3,7 +3,7 @@
 	<PropertyGroup>
 		<TargetFramework>net5.0</TargetFramework>
 		<Company>SER Soluciones</Company>
-		<Version>0.15.8</Version>
+		<Version>0.16.0</Version>
 		<AssemblyName>SER.Graphql.Reflection.NetCore</AssemblyName>
 		<RootNamespace>SER.Graphql.Reflection.NetCore</RootNamespace>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
@@ -26,8 +26,11 @@
 		<PackageReference Include="System.Linq.Dynamic.Core" Version="1.2.5" />
 		<PackageReference Include="NetTopologySuite.IO.GeoJSON" Version="2.0.4" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.DynamicLinq" Version="3.2.5" />
+
+		<PackageReference Include="SER.Utilitties.NetCore" Version="0.13.2" />
 	</ItemGroup>
 	<ItemGroup>
 		<Folder Include="Repositories\" />
 	</ItemGroup>
+
 </Project>

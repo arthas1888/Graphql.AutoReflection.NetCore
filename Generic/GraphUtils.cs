@@ -274,7 +274,6 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                             }
                         }
 
-
                         if (field.Arguments != null && !isList)
                         {
                             foreach (var argument in field.Arguments)
