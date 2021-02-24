@@ -1,14 +1,12 @@
 ﻿using SER.Graphql.Reflection.NetCore.Generic;
-using SER.Graphql.Reflection.NetCore.Models;
 using GraphQL.Types;
-using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
 using System.Linq.Dynamic.Core;
-using System.Reflection;
 using SER.Graphql.Reflection.NetCore.Utilities;
 using Microsoft.Extensions.Options;
 using SER.Graphql.Reflection.NetCore.Builder;
+using SER.Models;
 
 namespace SER.Graphql.Reflection.NetCore
 {

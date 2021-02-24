@@ -6,7 +6,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
-using SER.Graphql.Reflection.NetCore.Models;
 using GraphQL;
 using GraphQL.Language.AST;
 using GraphQL.Types;

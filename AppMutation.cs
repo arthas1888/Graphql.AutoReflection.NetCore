@@ -1,5 +1,4 @@
 ﻿using SER.Graphql.Reflection.NetCore.Generic;
-using SER.Graphql.Reflection.NetCore.Models;
 using GraphQL.Types;
 using Microsoft.AspNetCore.Http;
 using System;

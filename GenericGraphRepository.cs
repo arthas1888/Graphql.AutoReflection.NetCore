@@ -14,7 +14,6 @@ using System.Linq.Dynamic.Core;
 using GraphQL.Types;
 using GraphQL.DataLoader;
 using GraphQL;
-using SER.Graphql.Reflection.NetCore.Models;
 using Microsoft.EntityFrameworkCore.DynamicLinq;
 using System.ComponentModel.DataAnnotations;
 using SER.Graphql.Reflection.NetCore.Utilities;
@@ -24,8 +23,8 @@ using System.Reflection;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.Extensions.Options;
 using SER.Graphql.Reflection.NetCore.Builder;
-using SER.Utilitties.NetCore.Managers;
-using SER.Utilitties.NetCore.Models;
+using SER.Models;
+using SER.Models.SERAudit;
 
 namespace SER.Graphql.Reflection.NetCore
 {

@@ -3,7 +3,7 @@
 	<PropertyGroup>
 		<TargetFramework>net5.0</TargetFramework>
 		<Company>SER Soluciones</Company>
-		<Version>0.16.0</Version>
+		<Version>0.16.1</Version>
 		<AssemblyName>SER.Graphql.Reflection.NetCore</AssemblyName>
 		<RootNamespace>SER.Graphql.Reflection.NetCore</RootNamespace>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
@@ -13,21 +13,20 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="GraphQL" Version="3.1.3" />
-		<PackageReference Include="GraphQL.SystemTextJson" Version="3.1.3" />
+		<PackageReference Include="GraphQL" Version="3.3.2" />
+		<PackageReference Include="GraphQL.SystemTextJson" Version="3.3.2" />
 		<PackageReference Include="GraphQL.Authorization" Version="3.1.0" />
-		<PackageReference Include="GraphQL.Conventions" Version="2.5.5" />
-		<PackageReference Include="GraphQL.Server.Transports.AspNetCore.SystemTextJson" Version="4.3.0" />
-		<PackageReference Include="GraphQL.Server.Ui.Playground" Version="4.3.0" />
+		<PackageReference Include="GraphQL.Conventions" Version="3.0.0" />
+		<PackageReference Include="GraphQL.Server.Transports.AspNetCore.SystemTextJson" Version="4.4.1" />
+		<PackageReference Include="GraphQL.Server.Ui.Playground" Version="4.4.1" />
 
-		<PackageReference Include="GraphQL-Parser" Version="5.3.3" />
-		<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL.NetTopologySuite" Version="5.0.0" />
+		<PackageReference Include="GraphQL-Parser" Version="6.0.0" />
+		<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL.NetTopologySuite" Version="5.0.2" />
+		<PackageReference Include="SER.Models" Version="1.0.1" />
 
-		<PackageReference Include="System.Linq.Dynamic.Core" Version="1.2.5" />
+		<PackageReference Include="System.Linq.Dynamic.Core" Version="1.2.8" />
 		<PackageReference Include="NetTopologySuite.IO.GeoJSON" Version="2.0.4" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.DynamicLinq" Version="3.2.5" />
-
-		<PackageReference Include="SER.Utilitties.NetCore" Version="0.13.2" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.DynamicLinq" Version="5.2.8" />
 	</ItemGroup>
 	<ItemGroup>
 		<Folder Include="Repositories\" />

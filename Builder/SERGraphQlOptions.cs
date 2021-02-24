@@ -1,10 +1,6 @@
-﻿using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using SER.Graphql.Reflection.NetCore.Models;
+﻿using Microsoft.EntityFrameworkCore;
+using SER.Models;
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace SER.Graphql.Reflection.NetCore.Builder
 {

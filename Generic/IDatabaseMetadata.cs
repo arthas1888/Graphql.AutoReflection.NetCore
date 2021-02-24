@@ -8,11 +8,11 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using Newtonsoft.Json.Linq;
 using SER.Graphql.Reflection.NetCore.Utilities;
-using SER.Graphql.Reflection.NetCore.Models;
 using Microsoft.Extensions.Options;
 using SER.Graphql.Reflection.NetCore.Builder;
 using System.ComponentModel.DataAnnotations;
-using SER.Utilitties.NetCore.Models;
+using SER.Models;
+using SER.Models.SERAudit;
 
 namespace SER.Graphql.Reflection.NetCore.Generic
 {

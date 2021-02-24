@@ -10,7 +10,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using SER.Graphql.Reflection.NetCore.Generic;
-using SER.Graphql.Reflection.NetCore.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,7 +17,8 @@ using System.Reflection;
 using System.Threading.Tasks;
 using SER.Graphql.Reflection.NetCore.Builder;
 using Microsoft.EntityFrameworkCore;
-using SER.Utilitties.NetCore.Models;
+using SER.Models.SERAudit;
+using SER.Models;
 
 namespace SER.Graphql.Reflection.NetCore.Custom
 {

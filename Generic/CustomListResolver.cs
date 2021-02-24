@@ -1,18 +1,13 @@
 ﻿using GraphQL;
 using GraphQL.DataLoader;
 using GraphQL.Resolvers;
-using GraphQL.Types;
-using SER.Graphql.Reflection.NetCore.Models;
 using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
-using SER.Graphql.Reflection.NetCore.Builder;
 using Microsoft.AspNetCore.Identity;
+using SER.Models;
 
 namespace SER.Graphql.Reflection.NetCore.Generic
 {

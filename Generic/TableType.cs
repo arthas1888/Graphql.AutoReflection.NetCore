@@ -1,5 +1,4 @@
 ﻿using SER.Graphql.Reflection.NetCore.Generic;
-using SER.Graphql.Reflection.NetCore.Models;
 using GraphQL;
 using GraphQL.Types;
 using Microsoft.AspNetCore.Http;
@@ -16,6 +15,7 @@ using NetTopologySuite.Geometries;
 using GraphQL.Resolvers;
 using Microsoft.Extensions.Options;
 using SER.Graphql.Reflection.NetCore.Builder;
+using SER.Models;
 
 namespace SER.Graphql.Reflection.NetCore
 {
