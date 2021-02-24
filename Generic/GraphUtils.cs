@@ -218,19 +218,23 @@ namespace SER.Graphql.Reflection.NetCore.Generic
 
             if (mainModel == "" && arguments != null)
             {
+              
                 var type = mainType;
                 foreach (var argument in arguments)
                 {
-                    if (new string[] { "orderBy", "first", "page", "join" }.Contains(argument.Key)) continue;
+                    if (argument.Value != null && argument.Key != null)
+                    {
+                        if (new string[] { "orderBy", "first", "page", "join" }.Contains(argument.Key)) continue;
 
-                    if (argument.Key == "all")
-                    {
-                        i = FilterAllFields(type, args, whereArgs, i, argument.Value.ToString());
-                    }
-                    else
-                    {
-                        FilterArguments<TUser, TRole, TUserRole>(argument.Key, argument.Value, type, i, args, whereArgs);
-                        i++;
+                        if (argument.Key == "all")
+                        {
+                            i = FilterAllFields(type, args, whereArgs, i, argument.Value.ToString());
+                        }
+                        else
+                        {
+                            FilterArguments<TUser, TRole, TUserRole>(argument.Key, argument.Value, type, i, args, whereArgs);
+                            i++;
+                        }
                     }
                 }
             }
