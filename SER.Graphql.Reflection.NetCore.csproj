@@ -3,7 +3,7 @@
 	<PropertyGroup>
 		<TargetFramework>net5.0</TargetFramework>
 		<Company>SER Soluciones</Company>
-		<Version>0.16.2</Version>
+		<Version>0.16.3</Version>
 		<AssemblyName>SER.Graphql.Reflection.NetCore</AssemblyName>
 		<RootNamespace>SER.Graphql.Reflection.NetCore</RootNamespace>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
@@ -22,7 +22,7 @@
 
 		<PackageReference Include="GraphQL-Parser" Version="6.0.0" />
 		<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL.NetTopologySuite" Version="5.0.2" />
-		<PackageReference Include="SER.Models" Version="1.0.1" />
+		<PackageReference Include="SER.Models" Version="1.0.2" />
 
 		<PackageReference Include="System.Linq.Dynamic.Core" Version="1.2.8" />
 		<PackageReference Include="NetTopologySuite.IO.GeoJSON" Version="2.0.4" />
