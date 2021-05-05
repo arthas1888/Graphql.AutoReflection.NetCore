@@ -20,6 +20,7 @@ namespace SER.Graphql.Reflection.NetCore
             ValueConverter.Register(typeof(string), typeof(Point), ParsePoint);
             ValueConverter.Register(typeof(string), typeof(Coordinate), ParseCoordinate);
             ValueConverter.Register(typeof(string), typeof(LineString), ParseLineString);
+            ValueConverter.Register(typeof(string), typeof(Polygon), ParsePolygonString);
             ValueConverter.Register(typeof(string), typeof(MultiLineString), ParseMultiLineString);
             ValueConverter.Register(typeof(string), typeof(TimeSpan), TimeSpanConvert);
 
@@ -76,6 +77,19 @@ namespace SER.Graphql.Reflection.NetCore
             catch
             {
                 throw new FormatException($"Failed to parse {nameof(LineString)} from input '{geometryInpunt}'. Input should be a string of geojson representation");
+            }
+        }
+
+        private object ParsePolygonString(object geometryInpunt)
+        {
+            try
+            {
+                var geometryString = (string)geometryInpunt;
+                return JsonExtensions.DeserializeWithGeoJson<Polygon>(geometryString);
+            }
+            catch
+            {
+                throw new FormatException($"Failed to parse {nameof(Polygon)} from input '{geometryInpunt}'. Input should be a string of geojson representation");
             }
         }
 

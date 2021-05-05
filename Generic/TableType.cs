@@ -107,6 +107,7 @@ namespace SER.Graphql.Reflection.NetCore
             else if (mainTableColumn.Type == typeof(Point) ||
                  mainTableColumn.Type == typeof(Coordinate) ||
                  mainTableColumn.Type == typeof(LineString) ||
+                 mainTableColumn.Type == typeof(Polygon) ||
                  mainTableColumn.Type == typeof(MultiLineString))
             {
                 Field(
@@ -219,6 +220,7 @@ namespace SER.Graphql.Reflection.NetCore
             else if (columnMetadata.Type == typeof(Point) ||
                  columnMetadata.Type == typeof(Coordinate) ||
                  columnMetadata.Type == typeof(LineString) ||
+                 columnMetadata.Type == typeof(Polygon) ||
                  columnMetadata.Type == typeof(MultiLineString))
             {
                 objectGraphType.AddField(
@@ -455,6 +457,7 @@ namespace SER.Graphql.Reflection.NetCore
                     else if (columnMetadata.Type == typeof(Point) ||
                          columnMetadata.Type == typeof(Coordinate) ||
                          columnMetadata.Type == typeof(LineString) ||
+                         columnMetadata.Type == typeof(Polygon) ||
                          columnMetadata.Type == typeof(MultiLineString))
                     {
                         objectGraphInternal.AddField(
