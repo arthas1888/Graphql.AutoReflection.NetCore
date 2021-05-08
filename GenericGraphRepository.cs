@@ -25,6 +25,7 @@ using Microsoft.Extensions.Options;
 using SER.Graphql.Reflection.NetCore.Builder;
 using SER.Models;
 using SER.Models.SERAudit;
+using System.Collections;
 
 namespace SER.Graphql.Reflection.NetCore
 {
@@ -390,7 +391,7 @@ namespace SER.Graphql.Reflection.NetCore
                             // if (newValue == oldValue) continue;
 
                             Type type = null;
-                            var isList = propertyInfo.PropertyType.Name.Contains("List");
+                            var isList = !propertyInfo.PropertyType.IsArray && typeof(ICollection).IsAssignableFrom(propertyInfo.PropertyType);
                             if (isList)
                                 type = propertyInfo.PropertyType.GetGenericArguments().Count() > 0 ?
                                     propertyInfo.PropertyType.GetGenericArguments()[0] : propertyInfo.PropertyType;

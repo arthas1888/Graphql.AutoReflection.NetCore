@@ -13,6 +13,7 @@ using SER.Graphql.Reflection.NetCore.Builder;
 using System.ComponentModel.DataAnnotations;
 using SER.Models;
 using SER.Models.SERAudit;
+using System.Collections;
 
 namespace SER.Graphql.Reflection.NetCore.Generic
 {
@@ -90,7 +91,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                      .Select(x => x.Name).FirstOrDefault();
                 if (namePk == null) continue;
                 // Type elementType = Type.GetType(entityType.Name);
-                // Console.WriteLine($"tabla evaluada Name {entityType.Name} elementType {elementType} {entityType.ClrType} ");
+                //Console.WriteLine($"tabla evaluada Name {entityType.Name} elementType {elementType} {entityType.ClrType} ");
 
                 metaTables.Add(new TableMetadata
                 {
@@ -132,16 +133,16 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                     {
                         field = field.GetGenericArguments()[0];
                     }
+                    //Console.WriteLine($"Type: {propertyType.GetType()} type3: {propertyType.Name} {field?.Name}");
+                    var isList = !propertyType.PropertyType.IsArray && typeof(ICollection).IsAssignableFrom(propertyType.PropertyType); // propertyType.PropertyType.Name.Contains("List");
 
-                    var isList = propertyType.PropertyType.Name.Contains("List");
                     if (isList)
                         field = propertyType.PropertyType.GetGenericArguments().Count() > 0 ? propertyType.PropertyType.GetGenericArguments()[0] : propertyType.PropertyType;
 
                     var isJson = propertyType.GetCustomAttributes(true)
                         .Where(x => x.GetType() == typeof(ColumnAttribute) && ((ColumnAttribute)x).TypeName == "jsonb")
                         .FirstOrDefault();
-                    //Console.WriteLine($"Columna de la tabla: {entityType.GetTableName()} Name: {propertyType.Name} isJson {isJson} ");
-                    //    $"Type: {propertyType.GetType()} type3: {propertyType.Name} {field?.Name}");
+                    
                     if (propertyType.GetCustomAttributes(true)
                            .Any(x => x.GetType() == typeof(NotMappedAttribute))) continue;
                     tableColumns.Add(new ColumnMetadata

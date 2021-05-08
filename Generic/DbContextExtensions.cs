@@ -15,6 +15,7 @@ using Microsoft.Extensions.DependencyInjection;
 using SER.Graphql.Reflection.NetCore.Utilities;
 using System.Text.Json.Serialization;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Collections;
 
 namespace SER.Graphql.Reflection.NetCore.Generic
 {
@@ -42,7 +43,11 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                     //Console.WriteLine($"_________________TRACEEEEEEEEEEEEEEEEE____________: key: {propertyInfo.Name} value: {propertyInfo.PropertyType.Name}");
                     if (!propertyInfo.GetCustomAttributes(true).Any(x => x.GetType() == typeof(JsonIgnoreAttribute))
                         && !propertyInfo.GetCustomAttributes(true).Any(x => x.GetType() == typeof(NotMappedAttribute))
-                        && !propertyInfo.PropertyType.Name.Contains("List"))
+                        && !(propertyInfo.PropertyType.IsGenericType && propertyInfo.PropertyType.GetGenericTypeDefinition() == typeof(IList<>))
+                        && !(propertyInfo.PropertyType.IsGenericType && propertyInfo.PropertyType.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+                        && !(propertyInfo.PropertyType.IsGenericType && propertyInfo.PropertyType.GetGenericTypeDefinition() == typeof(ICollection<>))
+                        && !(typeof(ICollection).IsAssignableFrom(propertyInfo.PropertyType))
+                        )
                         properties.Add(propertyInfo.Name, propertyInfo.PropertyType);
                 }
 

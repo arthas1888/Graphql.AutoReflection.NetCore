@@ -48,7 +48,11 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             if (!_graphTypeDict.ContainsKey(key))
             {
                 // Console.WriteLine("Table agregada en diccionario cache: " + key);
-                _graphTypeDict.Add(key, objectGraphType);
+                try
+                {
+                    _graphTypeDict.Add(key, objectGraphType);
+                }
+                catch (Exception) { };
             }
             return _graphTypeDict[key];
         }
@@ -58,7 +62,11 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             if (!_inputGraphTypeDict.ContainsKey(key))
             {
                 // Console.WriteLine("Table agregada en diccionario cache: " + key);
-                _inputGraphTypeDict.Add(key, objectGraphType);
+                try
+                {
+                    _inputGraphTypeDict.Add(key, objectGraphType);
+                }
+                catch (Exception) { };
             }
             return _inputGraphTypeDict[key];
         }
@@ -80,13 +88,17 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                 throw new Exception($"Could not get {correctName} out of the list.");
             return value;
         }
-        
+
         public ListGraphType<ObjectGraphType> GetOrInsertListGraphType(string key, ListGraphType<ObjectGraphType> objectGraphType)
         {
             if (!_listGraphTypeDict.ContainsKey(key))
             {
                 // Console.WriteLine("Table agregada en diccionario lista cache: " + key);
-                _listGraphTypeDict.Add(key, objectGraphType);
+                try
+                {
+                    _listGraphTypeDict.Add(key, objectGraphType);
+                }
+                catch (Exception) { };
             }
             return _listGraphTypeDict[key];
         }
@@ -96,7 +108,11 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             if (!_secondListGraphTypeDict.ContainsKey(key))
             {
                 // Console.WriteLine("Table agregada en diccionario lista cache: " + key);
-                _secondListGraphTypeDict.Add(key, objectGraphType);
+                try
+                {
+                    _secondListGraphTypeDict.Add(key, objectGraphType);
+                }
+                catch (Exception) { };
             }
             return _secondListGraphTypeDict[key];
         }
@@ -116,7 +132,11 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             if (!_inputListGraphTypeDict.ContainsKey(key))
             {
                 // Console.WriteLine("Table agregada en diccionario lista cache: " + key);
-                _inputListGraphTypeDict.Add(key, objectGraphType);
+                try
+                {
+                    _inputListGraphTypeDict.Add(key, objectGraphType);
+                }
+                catch (Exception) { };
             }
             return _inputListGraphTypeDict[key];
         }

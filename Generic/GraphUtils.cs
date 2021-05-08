@@ -12,6 +12,8 @@ using GraphQL.Types;
 using Microsoft.AspNetCore.Identity;
 using System.Text.Json.Serialization;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json;
+using System.Collections;
 
 namespace SER.Graphql.Reflection.NetCore.Generic
 {
@@ -23,13 +25,21 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             if (whereArgs.Length > 0) whereArgs.Append(" AND ");
 
             var lastValid = false;
-            whereArgs.Append("( ");
+            
             foreach (var (propertyInfo, j) in type.GetProperties().Select((v, j) => (v, j)))
             {
+
                 if (!propertyInfo.GetCustomAttributes(true).Any(x => x.GetType() == typeof(JsonIgnoreAttribute))
                     && !propertyInfo.GetCustomAttributes(true).Any(x => x.GetType() == typeof(NotMappedAttribute))
-                    && !propertyInfo.PropertyType.Name.Contains("List"))
+                    && !propertyInfo.GetCustomAttributes(true).Where(x => x.GetType() == typeof(ColumnAttribute)).Any(attr => ((ColumnAttribute)attr).TypeName == "geography"
+                        || ((ColumnAttribute)attr).TypeName == "jsonb")
+                    && !(propertyInfo.PropertyType.IsGenericType && propertyInfo.PropertyType.GetGenericTypeDefinition() == typeof(IList<>))
+                    && !(propertyInfo.PropertyType.IsGenericType && propertyInfo.PropertyType.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+                    && !(propertyInfo.PropertyType.IsGenericType && propertyInfo.PropertyType.GetGenericTypeDefinition() == typeof(ICollection<>))
+                    && !(typeof(ICollection).IsAssignableFrom(propertyInfo.PropertyType))
+                    )
                 {
+                    if (j == 0) whereArgs.Append("( ");
                     var key = propertyInfo.Name;
 
                     if (!string.IsNullOrEmpty(parentModel))
@@ -48,7 +58,8 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             }
             if (isList)
                 whereArgs.Append(")");
-            whereArgs.Append(" )");
+            if (whereArgs.Length > 0)
+                whereArgs.Append(" )");
 
             return i;
         }
@@ -218,7 +229,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
 
             if (mainModel == "" && arguments != null)
             {
-              
+
                 var type = mainType;
                 foreach (var argument in arguments)
                 {

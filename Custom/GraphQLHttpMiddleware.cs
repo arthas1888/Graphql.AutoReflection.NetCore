@@ -22,6 +22,8 @@ using GraphQL.Introspection;
 using GraphQL.Execution;
 using System.Text;
 using GraphQL.DataLoader;
+using Microsoft.Extensions.Logging;
+using System.Text.Json;
 
 namespace SER.Graphql.Reflection.NetCore.Custom
 {
@@ -38,6 +40,7 @@ namespace SER.Graphql.Reflection.NetCore.Custom
         private readonly IEnumerable<IDocumentExecutionListener> _listeners;
         private readonly GraphQLSettings _settings;
         private readonly IDocumentWriter _writer;
+        private readonly ILogger _logger;
 
         public GraphQLHttpMiddleware(
             RequestDelegate next,
@@ -46,7 +49,8 @@ namespace SER.Graphql.Reflection.NetCore.Custom
             IGraphQLRequestDeserializer deserializer,
             IEnumerable<IDocumentExecutionListener> listeners,
             IOptions<GraphQLOptions> options,
-            IDocumentWriter writer)
+            IDocumentWriter writer,
+            ILoggerFactory loggerFactory)
         {
             _next = next;
             _path = path;
@@ -55,6 +59,7 @@ namespace SER.Graphql.Reflection.NetCore.Custom
             _listeners = listeners;
             _settings = settings;
             _writer = writer;
+            _logger = loggerFactory.CreateLogger<GraphQLHttpMiddleware<TSchema>>();
         }
 
         public async Task InvokeAsync(HttpContext context, ISchema schema, FillDataExtensions fillDataExtensions)
@@ -206,7 +211,7 @@ namespace SER.Graphql.Reflection.NetCore.Custom
             }
         }
 
-        private static Task<ExecutionResult> ExecuteRequestAsync(GraphQLRequest gqlRequest, IDictionary<string, object> userContext, 
+        private static Task<ExecutionResult> ExecuteRequestAsync(GraphQLRequest gqlRequest, IDictionary<string, object> userContext,
             IGraphQLExecuter<TSchema> executer, IServiceProvider requestServices, CancellationToken token)
             => executer.ExecuteAsync(
                 gqlRequest.OperationName,
@@ -269,6 +274,8 @@ namespace SER.Graphql.Reflection.NetCore.Custom
 
             context.Response.ContentType = "application/json";
             context.Response.StatusCode = httpStatusCode;
+            if (httpStatusCode == 400)
+                _logger.LogError($"_______________________________EEEEEEEEEEEEEEEEEEEEEErrrrrrrrrrrrrrrrrrrrrrrrrr {errorMessage}");
 
             await _writer.WriteAsync(context.Response.Body, result);
         }
@@ -295,6 +302,8 @@ namespace SER.Graphql.Reflection.NetCore.Custom
             {
                 msg = error.Message;
                 Console.WriteLine($"_______________________________EEEEEEEEEEEEEEEEEEEEEErrrrrrrrrrrrrrrrrrrrrrrrrr {error}");
+                if (httpStatusCode == 400)
+                    _logger.LogError($"_______________________________EEEEEEEEEEEEEEEEEEEEEErrrrrrrrrrrrrrrrrrrrrrrrrr {error}\nquery {result.Query}");
                 var ex = new ExecutionError(error.Message);
                 if (error.InnerException != null)
                 {
@@ -312,7 +321,7 @@ namespace SER.Graphql.Reflection.NetCore.Custom
             }
             catch (System.Text.Json.JsonException e)
             {
-                Console.WriteLine(e.ToString());
+                _logger.LogError($"_______________________________JsonException {e}");
             }
         }
 
@@ -322,6 +331,8 @@ namespace SER.Graphql.Reflection.NetCore.Custom
                 result.Extensions = _fillDataExtensions.GetAll();
             context.Response.ContentType = "application/json";
             context.Response.StatusCode = result.Errors?.Any() == true ? (int)HttpStatusCode.BadRequest : (int)HttpStatusCode.OK;
+            if (context.Response.StatusCode == (int)HttpStatusCode.BadRequest)
+                _logger.LogError($"_______________________________ Error Graph request {string.Join(", ", result.Errors.Select(x => x.Message).ToList())} \nquery {result.Query}");
 
             await _writer.WriteAsync(context.Response.Body, result);
         }
