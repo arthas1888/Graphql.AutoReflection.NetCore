@@ -288,11 +288,11 @@ namespace SER.Graphql.Reflection.NetCore.Custom
             var notFoundCode = "not-found";
 
             context.Response.ContentType = "application/json";
-            context.Response.StatusCode = result.Errors?.Any(er => (er as ValidationError)?.Code == authorizationCode) == true
+            context.Response.StatusCode = result.Errors?.Any(er => (er as ValidationError)?.Code == authorizationCode || (er as ValidationError)?.Number == authorizationCode) == true
                 ? (int)HttpStatusCode.Unauthorized
-                : result.Errors?.Any(er => (er as ValidationError)?.Code == forbiddenCode) == true ?
+                : result.Errors?.Any(er => (er as ValidationError)?.Code == forbiddenCode || (er as ValidationError)?.Number == forbiddenCode) == true ?
                 (int)HttpStatusCode.Forbidden
-                : result.Errors?.Any(er => (er as ValidationError)?.Code == notFoundCode) == true ?
+                : result.Errors?.Any(er => (er as ValidationError)?.Code == notFoundCode || (er as ValidationError)?.Number == notFoundCode) == true ?
                 (int)HttpStatusCode.NotFound
                 : httpStatusCode;
 
