@@ -738,7 +738,7 @@ namespace SER.Graphql.Reflection.NetCore
         {
             var value = context.Source.GetPropertyValue(_nameField);
             if (value == null) return null;
-            return value;
+            return (int)value;
         }
 
     }
