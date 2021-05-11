@@ -483,23 +483,25 @@ namespace SER.Graphql.Reflection.NetCore
                         FillArguments(queryArguments, tableColumn.ColumnName, tableColumn.Type);
                     }
                     else
+                    {
                         objectGraphInternal.Field(
                           GraphUtils.ResolveGraphType(tableColumn.Type),
                             tableColumn.ColumnName
                         );
-                    FillArguments(queryArguments, tableColumn.ColumnName, tableColumn.Type);
+                        FillArguments(queryArguments, tableColumn.ColumnName, tableColumn.Type);
 
-                    if (columnMetadata.Type.IsEnum)
-                    {
-                        FillArguments(queryArguments, $"{columnMetadata.ColumnName}_enum", typeof(int));
-                        objectGraphInternal.AddField(
-                            new FieldType
-                            {
-                                Type = typeof(int).GetGraphTypeFromType(true),
-                                Name = $"{columnMetadata.ColumnName}_value",
-                                Resolver = new EnumResolver(columnMetadata.ColumnName)
-                            }
-                        );
+                        if (columnMetadata.Type.IsEnum)
+                        {
+                            FillArguments(queryArguments, $"{columnMetadata.ColumnName}_enum", typeof(int));
+                            objectGraphInternal.AddField(
+                                new FieldType
+                                {
+                                    Type = typeof(int).GetGraphTypeFromType(true),
+                                    Name = $"{columnMetadata.ColumnName}_value",
+                                    Resolver = new EnumResolver(columnMetadata.ColumnName)
+                                }
+                            );
+                        }
                     }
                 }
             }
@@ -548,11 +550,26 @@ namespace SER.Graphql.Reflection.NetCore
                         FillArguments(queryArguments, tableColumn.ColumnName, tableColumn.Type);
                     }
                     else
+                    {
+
                         objectGraphInternal.Field(
                           GraphUtils.ResolveGraphType(tableColumn.Type),
                             tableColumn.ColumnName
                         );
-                    FillArguments(queryArguments, tableColumn.ColumnName, tableColumn.Type);
+                        FillArguments(queryArguments, tableColumn.ColumnName, tableColumn.Type);
+                        if (tableColumn.Type.IsEnum)
+                        {
+                            FillArguments(queryArguments, $"{tableColumn.ColumnName}_enum", typeof(int));
+                            objectGraphInternal.AddField(
+                                new FieldType
+                                {
+                                    Type = typeof(int).GetGraphTypeFromType(true),
+                                    Name = $"{tableColumn.ColumnName}_value",
+                                    Resolver = new EnumResolver(tableColumn.ColumnName)
+                                }
+                            );
+                        }
+                    }
                 }
             }
             else
