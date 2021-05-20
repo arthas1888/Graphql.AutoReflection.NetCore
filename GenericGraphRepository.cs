@@ -26,6 +26,8 @@ using SER.Graphql.Reflection.NetCore.Builder;
 using SER.Models;
 using SER.Models.SERAudit;
 using System.Collections;
+using System.Text.Json;
+using System.Buffers;
 
 namespace SER.Graphql.Reflection.NetCore
 {
@@ -381,6 +383,7 @@ namespace SER.Graphql.Reflection.NetCore
                     {
                         try
                         {
+                            //Console.WriteLine($"___________ key: {values.Key} values {values.Value} ");
                             var propertyInfo = typeof(T).GetProperty(values.Key);
                             if (propertyInfo.Name == "id") continue;
 
@@ -400,7 +403,11 @@ namespace SER.Graphql.Reflection.NetCore
                                 DeleteRelationsM2M(type, id);
 
                             //Console.WriteLine($"___________TRACEEEEEEEEEEEEEEEEE____________: key: {propertyInfo.Name} {oldValue} {newValue}");
-                            propertyInfo.SetValue(obj, newValue, null);
+                            if (isList)
+                                if (type.BaseType == typeof(object) && newValue != null) propertyInfo.SetValue(obj, newValue, null);
+                                else UpdateList(type, id, values.Value, newValue);
+                            else
+                                propertyInfo.SetValue(obj, newValue, null);
 
                         }
                         catch (Exception e)
@@ -442,6 +449,104 @@ namespace SER.Graphql.Reflection.NetCore
                 }
             }
             return obj;
+        }
+
+        private void UpdateList(Type type, int parentId, dynamic values, dynamic entities)
+        {
+            try
+            {
+                GetType()
+                    .GetMethod("UpdateListAsync")
+                    .MakeGenericMethod(type)
+                    .Invoke(this, parameters: new object[] { parentId, values, entities });
+            }
+            catch (Exception e)
+            {
+                _logger.LogError($"ERROR {e} type {nameof(type)}");
+            }
+        }
+
+        public void UpdateListAsync<M>(int parentId, List<object> values, List<M> entities) where M : class
+        {
+            var iQueryable = _context.Set<M>();
+            var keyProperty = typeof(M).GetProperties();
+            var paramFK = "";
+            Type valueType = null;
+
+            foreach (var prop in typeof(M).GetProperties())
+            {
+                var field = prop.PropertyType;
+                if (field.IsGenericType && field.GetGenericTypeDefinition() == typeof(Nullable<>))
+                {
+                    field = field.GetGenericArguments()[0];
+                }
+
+                if (field == typeof(T))
+                {
+                    paramFK = prop.GetCustomAttributes(true)
+                        .Where(x => x.GetType() == typeof(ForeignKeyAttribute))
+                        .Select(attr => ((ForeignKeyAttribute)attr).Name)
+                        .FirstOrDefault();
+                    valueType = field;
+                    break;
+                }
+            }
+
+
+            if (!string.IsNullOrEmpty(paramFK))
+            {
+                valueType = typeof(M).GetProperty(paramFK).PropertyType;
+                var expToEvaluate = EqualPredicate<M>(typeof(M), paramFK, parentId, valueType);
+                var dataDb = iQueryable.Where(expToEvaluate).ToList();
+
+
+                var stringJson = JsonSerializer.Serialize(values);
+                var jsonElement = ToJsonDocument(stringJson);
+
+                var array = jsonElement.EnumerateArray();
+
+                while (array.MoveNext())
+                {
+                    var objectElement = array.Current;
+                    var props = objectElement.EnumerateObject();
+                    var propId = props.FirstOrDefault(x => x.Name == "id");
+
+                    Func<M, bool> isEqual = (a) => propId.Value.GetInt32() == int.Parse(keyProperty.First(x => x.Name == "id").GetValue(a).ToString());
+                    var obj = dataDb.FirstOrDefault(isEqual);
+                    var entity = entities.FirstOrDefault(isEqual);
+
+                    while (props.MoveNext())
+                    {
+                        var pair = props.Current;
+                        string propertyName = pair.Name;
+                        JsonElement propertyValue = pair.Value;
+                        if (propertyName == "id") continue;
+
+                        var propertyInfo = keyProperty.FirstOrDefault(x => x.Name == propertyName);
+                        var oldValue = propertyInfo.GetValue(obj);
+                        var newValue = propertyInfo.GetValue(entity);
+                        //Console.WriteLine($"  ***************** oldValue {oldValue} newValue {newValue} PropertyType {propertyInfo.PropertyType} propertyValue {propertyValue} ");
+                        //dynamic value = typeof(JsonExtensions)
+                        //    .GetMethod("ElementToObject")
+                        //    .MakeGenericMethod(propertyInfo.PropertyType)
+                        //    .Invoke(null, parameters: new object[] { propertyValue });
+
+                        propertyInfo.SetValue(obj, newValue, null);
+
+                    }
+                }
+                // _context.SaveChanges();
+            }
+        }
+
+
+        private JsonElement ToJsonDocument(string response)
+        {
+            var documentOptions = new JsonDocumentOptions
+            {
+                CommentHandling = JsonCommentHandling.Skip
+            };
+            return JsonDocument.Parse(response, documentOptions).RootElement;
         }
 
         private void DeleteRelationsM2M(Type type, int parentId)
