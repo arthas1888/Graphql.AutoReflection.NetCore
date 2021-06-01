@@ -301,8 +301,8 @@ namespace SER.Graphql.Reflection.NetCore.Custom
             foreach (var error in result.Errors)
             {
                 msg = error.Message;
-                Console.WriteLine($"_______________________________EEEEEEEEEEEEEEEEEEEEEErrrrrrrrrrrrrrrrrrrrrrrrrr {error}");
-                if (httpStatusCode == 400)
+                Console.WriteLine($"_______________________________EEEEEEEEEEEEEEEEEEEEEErrrrrrrrrrrrrrrrrrrrrrrrrr {error} httpStatusCode {context.Response.StatusCode}");
+                if (context.Response.StatusCode == 400)
                     _logger.LogError($"_______________________________EEEEEEEEEEEEEEEEEEEEEErrrrrrrrrrrrrrrrrrrrrrrrrr {error}\nquery {result.Query}");
                 var ex = new ExecutionError(error.Message);
                 if (error.InnerException != null)

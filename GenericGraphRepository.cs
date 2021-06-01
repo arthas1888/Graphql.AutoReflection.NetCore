@@ -28,6 +28,7 @@ using SER.Models.SERAudit;
 using System.Collections;
 using System.Text.Json;
 using System.Buffers;
+using SER.Graphql.Reflection.NetCore.Models;
 
 namespace SER.Graphql.Reflection.NetCore
 {
@@ -171,6 +172,28 @@ namespace SER.Graphql.Reflection.NetCore
             if (_optionsDelegate.CurrentValue.EnableCustomFilter)
                 query = FilterQueryByCompany(query, out _);
             return query.Count();
+        }
+
+        public SumObjectResponse<T> GetSumQuery(string param, List<string> includeExpressions = null,
+           string whereArgs = "", params object[] args)
+        {
+            IQueryable<T> query = GetModel;
+
+            if (includeExpressions != null && includeExpressions.Count > 0)
+            {
+                foreach (var include in includeExpressions)
+                    query = query.Include(include);
+            }
+            if (!string.IsNullOrEmpty(whereArgs) && args.Length > 0)
+                query = query.Where(whereArgs, args);
+
+            if (_optionsDelegate.CurrentValue.EnableCustomFilter)
+                query = FilterQueryByCompany(query, out _);
+
+            return new SumObjectResponse<T>
+            {
+                response_sum = query.Sum(x => EF.Property<decimal>(x, param))
+            };
         }
 
         private IQueryable<T> FilterQueryByCompany(IQueryable<T> query, out bool find, Type parentType = null, string columnName = "")

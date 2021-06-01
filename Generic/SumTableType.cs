@@ -7,17 +7,18 @@ using SER.Graphql.Reflection.NetCore.Utilities;
 using Microsoft.Extensions.Options;
 using SER.Graphql.Reflection.NetCore.Builder;
 using SER.Models;
+using SER.Graphql.Reflection.NetCore.Models;
 
 namespace SER.Graphql.Reflection.NetCore
 {
-    public class CountTableType<T> : IntGraphType
+    public class SumTableType<T> : ObjectGraphType<SumObjectResponse<T>> where T : class
     {
         private ITableNameLookup _tableNameLookup;
         private IDatabaseMetadata _dbMetadata;
         private readonly IOptionsMonitor<SERGraphQlOptions> _optionsDelegate;
         public QueryArguments TableArgs { get; set; }
 
-        public CountTableType(
+        public SumTableType(
             IDatabaseMetadata dbMetadata,
             TableMetadata mainTable,
             ITableNameLookup tableNameLookup,
@@ -32,7 +33,12 @@ namespace SER.Graphql.Reflection.NetCore
             this.ValidatePermissions(permission, friendlyTableName, mainTable.Type, _optionsDelegate);
             // this.RequireAuthentication(); 
 
-            Name = mainTable.TableName + "_count";
+            Name = mainTable.TableName + "_sum";
+
+            Field(
+                typeof(DecimalGraphType),
+                "response_sum"
+            );
 
             foreach (var mainTableColumn in mainTable.Columns)
             {
@@ -53,6 +59,12 @@ namespace SER.Graphql.Reflection.NetCore
             }
             else
             {
+                if (Utilities.TypeExtensions.IsNumber(mainTableColumn.Type))
+                    Field(
+                       GraphUtils.ResolveGraphType(mainTableColumn.Type),
+                       mainTableColumn.ColumnName
+                    );
+
                 FillArgs(mainTableColumn.ColumnName, mainTableColumn.Type);
                 if (mainTableColumn.Type.IsEnum)
                 {
@@ -86,8 +98,11 @@ namespace SER.Graphql.Reflection.NetCore
 
             if (TableArgs == null)
             {
-                TableArgs = new QueryArguments();
-                TableArgs.Add(new QueryArgument<StringGraphType> { Name = "all" });
+                TableArgs = new QueryArguments
+                {
+                    new QueryArgument<StringGraphType> { Name = "all" },
+                    //new QueryArgument<NonNullGraphType<StringGraphType>> { Name = "param" }
+                };
             }
             if (type.IsArray)
             {

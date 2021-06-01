@@ -8,6 +8,10 @@ using GraphQL.DataLoader;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using SER.Graphql.Reflection.NetCore.Builder;
+using SER.Graphql.Reflection.NetCore.Models;
+using GraphQL.Resolvers;
+using GraphQL;
+using System.Threading.Tasks;
 
 namespace SER.Graphql.Reflection.NetCore.Generic
 {
@@ -41,6 +45,9 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             Name = "Query";
             var tables = _dbMetadata.GetTableMetadatas();
 
+            var table = tables.First(x => x.TableName == "appointments");
+
+
             foreach (var metaTable in tables)
             {
                 var friendlyTableName = metaTable.Type.Name.ToSnakeCase().ToLower();
@@ -63,6 +70,15 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                 }
 
                 var countTableType = _tableNameLookup.GetOrInsertGraphType($"{metaTable.Type.Name}_count", objectCountGraphType);
+
+                dynamic objectSumGraphType = null;
+                if (!_tableNameLookup.ExistGraphType($"{metaTable.Type.Name}_sum_plus"))
+                {
+                    var inherateType = typeof(SumTableType<>).MakeGenericType(new Type[] { metaTable.Type });
+                    objectSumGraphType = Activator.CreateInstance(inherateType, new object[] { _dbMetadata, metaTable, _tableNameLookup, _optionsDelegate });
+                }
+                var sumTableType = _tableNameLookup.GetOrInsertGraphType($"{metaTable.Type.Name}_sum_plus", objectSumGraphType);
+                var ttype = typeof(TableType<>).MakeGenericType(new Type[] { metaTable.Type });               
 
                 AddField(new FieldType
                 {
@@ -93,8 +109,16 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                     Resolver = new MyFieldResolver<TUser, TRole, TUserRole>(metaTable, _fillDataExtensions, _httpContextAccessor),
                     Arguments = new QueryArguments(countTableType.TableArgs)
                 });
+
+                AddField(new FieldType
+                {
+                    Name = $"{friendlyTableName}_sum",
+                    Type = ttype,
+                    ResolvedType = sumTableType,
+                    Resolver = new MyFieldResolver<TUser, TRole, TUserRole>(metaTable, _fillDataExtensions, _httpContextAccessor),
+                    Arguments = new QueryArguments(sumTableType.TableArgs)
+                });
             }
         }
     }
-
 }

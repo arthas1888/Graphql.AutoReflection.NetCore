@@ -13,6 +13,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using SER.Graphql.Reflection.NetCore.Builder;
+using System.Text.Json;
 
 namespace SER.Graphql.Reflection.NetCore.Generic
 {
@@ -24,7 +25,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
         private TableMetadata _tableMetadata;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly FillDataExtensions _fillDataExtensions;
-        private readonly ILogger _logger;        
+        private readonly ILogger _logger;
 
         public MyFieldResolver(TableMetadata tableMetadata,
             FillDataExtensions fillDataExtensions,
@@ -73,6 +74,32 @@ namespace SER.Graphql.Reflection.NetCore.Generic
 
                     return service.GetCountQuery(whereArgs: whereArgs.ToString(),
                         includeExpressions: includes, args: args.ToArray());
+                }
+                else if (context.FieldName.Contains("_sum"))
+                {
+                    GraphUtils.DetectChild<TUser, TRole, TUserRole>(context.FieldAst.SelectionSet.Selections, includes,
+                        context.FieldDefinition.ResolvedType, args, whereArgs,
+                        arguments: context.Arguments, mainType: _tableMetadata.Type);
+                    string param = "";
+                    Console.WriteLine($"whereArgs: {whereArgs}");
+                    if (context.FieldAst.SelectionSet.Selections != null)
+                    {
+                        foreach (Field field in context.FieldAst.SelectionSet.Selections)
+                        {
+                            //Console.WriteLine($"name {field.Name}");
+                            param = field.Name;
+                            context.FieldAst.SelectionSet.Selections.Remove(field);
+                            break;
+                        }
+                    }
+
+                    if (param == null)
+                    {
+                        GetError(context);
+                        return null;
+                    }
+
+                    return service.GetSumQuery(param: param, whereArgs: whereArgs.ToString(), includeExpressions: includes, args: args.ToArray());
                 }
                 else
                 {
