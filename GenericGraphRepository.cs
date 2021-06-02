@@ -205,10 +205,22 @@ namespace SER.Graphql.Reflection.NetCore
             var typeToEvaluate = typeof(T);
             if (parentType != null) typeToEvaluate = parentType;
 
-            //Console.WriteLine($"Name {_httpContextAccessor.HttpContext.User.Identity.Name} IsAuthenticated {_httpContextAccessor.HttpContext.User.Identity.IsAuthenticated}" +
+            //Console.WriteLine($" *************** nameField {nameField} Name {_httpContextAccessor.HttpContext.User.Identity.Name} IsAuthenticated {_httpContextAccessor.HttpContext.User.Identity.IsAuthenticated}" +
             //    $" GetCompanyIdUser() { GetCompanyIdUser()}");
             foreach (var propertyInfo in typeToEvaluate.GetProperties())
             {
+                if (propertyInfo.GetCustomAttributes(true).Any(x => x.GetType() == typeof(NotMappedAttribute))
+                   || propertyInfo.GetCustomAttributes(true).Where(x => x.GetType() == typeof(ColumnAttribute)).Any(attr => ((ColumnAttribute)attr).TypeName == "geography"
+                       || ((ColumnAttribute)attr).TypeName == "jsonb")
+                    || (propertyInfo.PropertyType.IsArray)
+                    || (propertyInfo.PropertyType.IsGenericType && propertyInfo.PropertyType.GetGenericTypeDefinition() == typeof(IList<>))
+                    || (propertyInfo.PropertyType.IsGenericType && propertyInfo.PropertyType.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+                    || (propertyInfo.PropertyType.IsGenericType && propertyInfo.PropertyType.GetGenericTypeDefinition() == typeof(ICollection<>))
+                    || (typeof(ICollection).IsAssignableFrom(propertyInfo.PropertyType))
+                   )
+                {
+                    continue;
+                }
                 var field = propertyInfo.PropertyType;
                 if (field.IsGenericType && field.GetGenericTypeDefinition() == typeof(Nullable<>))
                 {
@@ -228,8 +240,7 @@ namespace SER.Graphql.Reflection.NetCore
                         types.Add(propertyInfo.Name, childType);
                     }
 
-
-                if (propertyInfo.Name == nameField)
+                if (propertyInfo.Name.ToSnakeCase() == nameField)
                 {
                     find = true;
                     if (_httpContextAccessor.HttpContext.User.Identity.IsAuthenticated && !string.IsNullOrEmpty(_httpContextAccessor.HttpContext.User.Identity.Name))
@@ -237,8 +248,8 @@ namespace SER.Graphql.Reflection.NetCore
                     else
                         companyId = _httpContextAccessor.HttpContext.Session?.GetInt32(nameField)?.ToString();
 
-                    // if (propertyInfo.Name == "CompanyId") query = query.Where($"{columnName}CompanyId  = @0 OR {columnName}CompanyId  == null", companyId);
-                    query = query.Where($"{columnName}{nameField}  = @0 OR {columnName}{nameField}  == null", companyId);
+                    if (typeof(TUser) == typeof(T)) query = query.Where($"{columnName}{propertyInfo.Name}  = @0 OR {columnName}{propertyInfo.Name}  == null", companyId);
+                    else query = query.Where($"{columnName}{nameField}  = @0 OR {columnName}{nameField}  == null", companyId);
                     break;
                 }
             }

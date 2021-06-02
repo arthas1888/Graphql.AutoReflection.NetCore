@@ -45,9 +45,6 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             Name = "Query";
             var tables = _dbMetadata.GetTableMetadatas();
 
-            var table = tables.First(x => x.TableName == "appointments");
-
-
             foreach (var metaTable in tables)
             {
                 var friendlyTableName = metaTable.Type.Name.ToSnakeCase().ToLower();
