@@ -192,7 +192,7 @@ namespace SER.Graphql.Reflection.NetCore
 
             return new SumObjectResponse<T>
             {
-                response_sum = query.Sum(x => EF.Property<decimal>(x, param))
+                response_sum = query.Sum(param)
             };
         }
 

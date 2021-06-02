@@ -8,7 +8,7 @@ namespace SER.Graphql.Reflection.NetCore.Models
 {
     public class SumObjectResponse<T> where T : class
     {
-        public decimal response_sum { get; set; }
+        public object response_sum { get; set; }
         public T obj { get; set; }
     }
 }
