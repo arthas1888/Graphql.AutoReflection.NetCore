@@ -248,8 +248,8 @@ namespace SER.Graphql.Reflection.NetCore
                     else
                         companyId = _httpContextAccessor.HttpContext.Session?.GetInt32(nameField)?.ToString();
 
-                    if (typeof(TUser) == typeof(T)) query = query.Where($"{columnName}{propertyInfo.Name}  = @0 OR {columnName}{propertyInfo.Name}  == null", companyId);
-                    else query = query.Where($"{columnName}{nameField}  = @0 OR {columnName}{nameField}  == null", companyId);
+                    if (typeof(TUser) == typeof(T) || typeToEvaluate == typeof(TUser)) query = query.Where($"{columnName}{propertyInfo.Name}  = @0 OR {columnName}{propertyInfo.Name}  == null", companyId);
+                    else query = query.Where($"{columnName}{propertyInfo.Name}  = @0 OR {columnName}{propertyInfo.Name}  == null", companyId);
                     break;
                 }
             }
