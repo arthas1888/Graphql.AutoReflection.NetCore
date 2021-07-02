@@ -21,6 +21,9 @@ namespace SER.Graphql.Reflection.NetCore.Builder
         public Type RoleType { get; set; }
         public Type UserRoleType { get; set; }
         public string ConnectionString { get; set; }
+        public string SecurityKey { get; set; }
+        public string SigningKey { get; set; }
+        public string TokenIssuer { get; set; }
         public bool EnableCustomFilter { get; set; }
         public string NameCustomFilter { get; set; }
         public bool EnableStatusMutation { get; set; }

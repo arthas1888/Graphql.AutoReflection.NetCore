@@ -6,6 +6,7 @@ using System;
 using NetTopologySuite.Geometries;
 using SER.Graphql.Reflection.NetCore.Utilities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace SER.Graphql.Reflection.NetCore
 {
@@ -26,6 +27,7 @@ namespace SER.Graphql.Reflection.NetCore
 
             Query = services.GetRequiredService<GraphQLQuery<TUser, TRole, TUserRole>>();
             Mutation = services.GetRequiredService<AppMutation>();
+            Subscription = services.GetRequiredService<AppSubscriptions>();
         }
 
         private object TimeSpanConvert(object value)

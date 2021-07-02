@@ -14,6 +14,7 @@ using System.Text.Json.Serialization;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json;
 using System.Collections;
+using GraphQL.Execution;
 
 namespace SER.Graphql.Reflection.NetCore.Generic
 {
@@ -215,7 +216,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
         }
 
         public static void DetectChild<TUser, TRole, TUserRole>(IList<ISelection> selections, List<string> includes, dynamic resolvedType, List<object> args,
-            StringBuilder whereArgs, string mainModel = "", IDictionary<string, object> arguments = null, Type mainType = null)
+            StringBuilder whereArgs, string mainModel = "", IDictionary<string, ArgumentValue> arguments = null, Type mainType = null)
             where TUser : class
             where TRole : class
             where TUserRole : class
@@ -233,17 +234,17 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                 var type = mainType;
                 foreach (var argument in arguments)
                 {
-                    if (argument.Value != null && argument.Key != null)
+                    if (argument.Key != null && argument.Value.Value != null)
                     {
                         if (new string[] { "orderBy", "first", "page", "join" }.Contains(argument.Key)) continue;
 
                         if (argument.Key == "all")
                         {
-                            i = FilterAllFields(type, args, whereArgs, i, argument.Value.ToString());
+                            i = FilterAllFields(type, args, whereArgs, i, argument.Value.Value.ToString());
                         }
                         else
                         {
-                            FilterArguments<TUser, TRole, TUserRole>(argument.Key, argument.Value, type, i, args, whereArgs);
+                            FilterArguments<TUser, TRole, TUserRole>(argument.Key, argument.Value.Value, type, i, args, whereArgs);
                             i++;
                         }
                     }

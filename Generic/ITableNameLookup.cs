@@ -14,9 +14,9 @@ namespace SER.Graphql.Reflection.NetCore.Generic
         bool ExistGraphType(string key);
         bool ExistInputGraphType(string key);
 
-        ListGraphType<ObjectGraphType> GetOrInsertListGraphType(string key, ListGraphType<ObjectGraphType> objectGraphType);
-        ListGraphType<ObjectGraphType> GetOrInsertSecondListGraphType(string key, ListGraphType<ObjectGraphType> objectGraphType);
-        ListGraphType<InputObjectGraphType> GetOrInsertInputListGraphType(string key, ListGraphType<InputObjectGraphType> objectGraphType);
+        dynamic GetOrInsertListGraphType(string key, dynamic listGraphType);
+        dynamic GetOrInsertSecondListGraphType(string key, dynamic listGraphType);
+        dynamic GetOrInsertInputListGraphType(string key, dynamic listGraphType);
         bool ExistListGraphType(string key);
         bool ExistSecondListGraphType(string key);
         bool ExistInputListGraphType(string key);
@@ -29,9 +29,9 @@ namespace SER.Graphql.Reflection.NetCore.Generic
         private IDictionary<string, string> _lookupTable = new Dictionary<string, string>();
         private IDictionary<string, dynamic> _graphTypeDict = new Dictionary<string, dynamic>();
         private IDictionary<string, dynamic> _inputGraphTypeDict = new Dictionary<string, dynamic>();
-        private IDictionary<string, ListGraphType<ObjectGraphType>> _listGraphTypeDict = new Dictionary<string, ListGraphType<ObjectGraphType>>();
-        private IDictionary<string, ListGraphType<ObjectGraphType>> _secondListGraphTypeDict = new Dictionary<string, ListGraphType<ObjectGraphType>>();
-        private IDictionary<string, ListGraphType<InputObjectGraphType>> _inputListGraphTypeDict = new Dictionary<string, ListGraphType<InputObjectGraphType>>();
+        private IDictionary<string, dynamic> _listGraphTypeDict = new Dictionary<string, dynamic>();
+        private IDictionary<string, dynamic> _secondListGraphTypeDict = new Dictionary<string, dynamic>();
+        private IDictionary<string, dynamic> _inputListGraphTypeDict = new Dictionary<string, dynamic>();
 
         public bool ExistGraphType(string key)
         {
@@ -89,28 +89,28 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             return value;
         }
 
-        public ListGraphType<ObjectGraphType> GetOrInsertListGraphType(string key, ListGraphType<ObjectGraphType> objectGraphType)
+        public dynamic GetOrInsertListGraphType(string key, dynamic listGraphType)
         {
             if (!_listGraphTypeDict.ContainsKey(key))
             {
                 // Console.WriteLine("Table agregada en diccionario lista cache: " + key);
                 try
                 {
-                    _listGraphTypeDict.Add(key, objectGraphType);
+                    _listGraphTypeDict.Add(key, listGraphType);
                 }
                 catch (Exception) { };
             }
             return _listGraphTypeDict[key];
         }
 
-        public ListGraphType<ObjectGraphType> GetOrInsertSecondListGraphType(string key, ListGraphType<ObjectGraphType> objectGraphType)
+        public dynamic GetOrInsertSecondListGraphType(string key, dynamic listGraphType)
         {
             if (!_secondListGraphTypeDict.ContainsKey(key))
             {
                 // Console.WriteLine("Table agregada en diccionario lista cache: " + key);
                 try
                 {
-                    _secondListGraphTypeDict.Add(key, objectGraphType);
+                    _secondListGraphTypeDict.Add(key, listGraphType);
                 }
                 catch (Exception) { };
             }
@@ -127,7 +127,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             return _secondListGraphTypeDict.ContainsKey(key);
         }
 
-        public ListGraphType<InputObjectGraphType> GetOrInsertInputListGraphType(string key, ListGraphType<InputObjectGraphType> objectGraphType)
+        public dynamic GetOrInsertInputListGraphType(string key, dynamic objectGraphType)
         {
             if (!_inputListGraphTypeDict.ContainsKey(key))
             {

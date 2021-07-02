@@ -61,7 +61,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             }
             else if (columnMetadata.Type.IsEnum)
             {
-                Field<IntGraphType>(columnMetadata.ColumnName, resolve: context => (int)context.Source.GetPropertyValue(columnMetadata.ColumnName));
+                Field<IntGraphType>(columnMetadata.ColumnName, resolve: context => (int)context.Source.GetPropertyValue(columnMetadata.Type));
             }
             else if (columnMetadata.Type != _optionsDelegate.CurrentValue.UserType
                      && columnMetadata.Type != _optionsDelegate.CurrentValue.RoleType
@@ -74,19 +74,20 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             }
         }
 
-        private ListGraphType<InputObjectGraphType> GetInternalListInstances(ColumnMetadata columnMetadata)
+        private dynamic GetInternalListInstances(ColumnMetadata columnMetadata)
         {
             var metaTable = _dbMetadata.GetTableMetadatas().FirstOrDefault(x => x.Type.Name == columnMetadata.Type.Name);
 
             string key = $"{metaTable.Type.Name.ToLower().ToSnakeCase()}_list_input";
             var objectGraphType = new InputObjectGraphType();
             objectGraphType.Name = key;
-            ListGraphType<InputObjectGraphType> listGraphType = null;
+            dynamic listGraphType = null;
 
             if (!_tableNameLookup.ExistInputListGraphType(key))
             {
                 var tableType = GetSecondGraphType(columnMetadata, metaTable);
-                listGraphType = new ListGraphType<InputObjectGraphType>();
+                var inherateListType = typeof(ListGraphType<>).MakeGenericType(new Type[] { tableType.GetType() });
+                listGraphType = Activator.CreateInstance(inherateListType);
                 listGraphType.ResolvedType = tableType;
                 // Field<ListGraphType<CityType>>(nameof(State.cities));
             }

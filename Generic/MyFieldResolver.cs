@@ -47,11 +47,12 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             var args = new List<object>();
             var includes = new List<string>();
 
+            //Console.WriteLine($" ----------------------- alias {alias}");
             try
             {
                 //var listFieldType = ((dynamic)context.FieldDefinition.ResolvedType).ResolvedType.Fields;
 
-                if (context.FieldName.Contains("_list"))
+                if (alias.Contains("_list"))
                 {
                     GraphUtils.DetectChild<TUser, TRole, TUserRole>(context.FieldAst.SelectionSet.Selections, includes,
                         ((dynamic)context.FieldDefinition.ResolvedType).ResolvedType, args, whereArgs,
@@ -65,7 +66,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                             includeExpressions: includes, args: args.ToArray())
                         .Result;
                 }
-                else if (context.FieldName.Contains("_count"))
+                else if (alias.Contains("_count"))
                 {
                     GraphUtils.DetectChild<TUser, TRole, TUserRole>(context.FieldAst.SelectionSet.Selections, includes,
                         context.FieldDefinition.ResolvedType, args, whereArgs,
@@ -75,7 +76,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                     return service.GetCountQuery(whereArgs: whereArgs.ToString(),
                         includeExpressions: includes, args: args.ToArray());
                 }
-                else if (context.FieldName.Contains("_sum"))
+                else if (alias.Contains("_sum"))
                 {
                     GraphUtils.DetectChild<TUser, TRole, TUserRole>(context.FieldAst.SelectionSet.Selections, includes,
                         context.FieldDefinition.ResolvedType, args, whereArgs,

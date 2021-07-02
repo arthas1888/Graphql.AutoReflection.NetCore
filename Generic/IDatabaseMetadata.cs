@@ -142,7 +142,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                     var isJson = propertyType.GetCustomAttributes(true)
                         .Where(x => x.GetType() == typeof(ColumnAttribute) && ((ColumnAttribute)x).TypeName == "jsonb")
                         .FirstOrDefault();
-                    
+
                     if (propertyType.GetCustomAttributes(true)
                            .Any(x => x.GetType() == typeof(NotMappedAttribute))) continue;
                     tableColumns.Add(new ColumnMetadata
@@ -158,11 +158,13 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             }
             else
             {
+                var tableIdentifier = StoreObjectIdentifier.Table(entityType.GetTableName().ToSnakeCase(), entityType.GetSchema());
+
                 foreach (var propertyType in entityType.GetProperties())
                 {
                     var columnMetadata = new ColumnMetadata
                     {
-                        ColumnName = propertyType.GetColumnName(),
+                        ColumnName = propertyType.GetColumnName(tableIdentifier),
                         DataType = propertyType.GetRelationalTypeMapping().ClrType.Name,
                         IsNull = false,
                         Type = propertyType.GetRelationalTypeMapping().ClrType,

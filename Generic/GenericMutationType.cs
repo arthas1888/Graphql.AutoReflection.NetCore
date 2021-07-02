@@ -36,7 +36,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                     columnMetadata.ColumnName,
                     resolve: context =>
                     {
-                        dynamic point = context.Source.GetPropertyValue(columnMetadata.ColumnName);
+                        dynamic point = context.Source.GetPropertyValue(columnMetadata.Type);
                         if (point == null) return null;
                         return JsonExtensions.SerializeWithGeoJson(point, formatting: Formatting.None);
                     }

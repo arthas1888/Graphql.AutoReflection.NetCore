@@ -29,6 +29,9 @@ using System.Collections;
 using System.Text.Json;
 using System.Buffers;
 using SER.Graphql.Reflection.NetCore.Models;
+using System.Reactive.Subjects;
+using System.Reactive.Linq;
+using SER.Graphql.Reflection.NetCore.WebSocket;
 
 namespace SER.Graphql.Reflection.NetCore
 {
@@ -49,6 +52,7 @@ namespace SER.Graphql.Reflection.NetCore
         public string model;
         public string nameModel;
         private readonly AuditManager _cRepositoryLog;
+        private readonly IHandleMsg<T> _handleMsg;
         public static readonly ILoggerFactory MyLoggerFactory = LoggerFactory.Create(builder =>
         {
             builder
@@ -71,6 +75,7 @@ namespace SER.Graphql.Reflection.NetCore
             model = typeof(T).Name;
             nameModel = typeof(T).Name.ToSnakeCase().ToLower();
             _cache = _httpContextAccessor.HttpContext.RequestServices.GetService<IMemoryCache>();
+            _handleMsg = _httpContextAccessor.HttpContext.RequestServices.GetService<IHandleMsg<T>>();
             _logger = _httpContextAccessor.HttpContext.RequestServices.GetService<ILogger<GenericGraphRepository<T, TContext, TUser, TRole, TUserRole>>>();
             _fillDataExtensions = fillDataExtensions;
             _dataLoader = dataLoader;
@@ -374,6 +379,8 @@ namespace SER.Graphql.Reflection.NetCore
                 }
 
                 SendStatus(GraphGrpcStatus.CREATE, GetKey(entity));
+                if (!string.IsNullOrEmpty(GetCurrentUser()))
+                    _handleMsg.GetStream().OnNext(entity);
 
                 return obj.Entity;
             }
@@ -468,6 +475,8 @@ namespace SER.Graphql.Reflection.NetCore
                     //_context.Entry(obj).State = EntityState.Modified;
                     _context.SaveChanges();
                     SendStatus(GraphGrpcStatus.UPDATE, id.ToString());
+                    if (!string.IsNullOrEmpty(GetCurrentUser()))
+                        _handleMsg.GetStream().OnNext(entity);
                 }
                 catch (ValidationException exc)
                 {
@@ -693,6 +702,8 @@ namespace SER.Graphql.Reflection.NetCore
                 var cacheKeySize = string.Format("_{0}_size", model);
                 _cache.Remove(cacheKeySize);
                 SendStatus(GraphGrpcStatus.DELETE, id.ToString());
+                if (!string.IsNullOrEmpty(GetCurrentUser()))
+                    _handleMsg.GetStream().OnNext(obj);
             }
             return obj;
         }
@@ -740,6 +751,8 @@ namespace SER.Graphql.Reflection.NetCore
 
             return cacheEntry;
         }
+
+
 
         #endregion
     }

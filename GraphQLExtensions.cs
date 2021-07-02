@@ -1,4 +1,5 @@
-﻿using GraphQL.Authorization;
+﻿using GraphQL;
+using GraphQL.Authorization;
 using GraphQL.Builders;
 using GraphQL.Types;
 using Microsoft.Extensions.Options;
@@ -135,7 +136,7 @@ namespace SER.Graphql.Reflection.NetCore
 
         public static void RequireAuthentication(this IProvideMetadata type)
         {
-            AuthorizationMetadataExtensions.AuthorizeWith(type, "Authorized");
+            type.AuthorizeWith("Authenticated");
         }
 
         public static void RequirePermission(this IProvideMetadata type, string permission)

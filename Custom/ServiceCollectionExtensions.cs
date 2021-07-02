@@ -19,6 +19,9 @@ using SER.Graphql.Reflection.NetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using SER.Models.SERAudit;
 using SER.Models;
+using SER.Graphql.Reflection.NetCore.WebSocket;
+using SER.Graphql.Reflection.NetCore.Permissions;
+using GraphQL.Server.Transports.Subscriptions.Abstractions;
 
 namespace SER.Graphql.Reflection.NetCore.Custom
 {
@@ -45,7 +48,10 @@ namespace SER.Graphql.Reflection.NetCore.Custom
         where TRole : class
         where TUserRole : class
         {
-            services.AddSingleton<IDocumentExecuter, DocumentExecuter>();
+            services.AddHttpContextAccessor();
+            services.AddTransient<IOperationMessageListener, AuthenticationListener>();
+
+            services.AddSingleton<IDocumentExecuter, MyDocumentExecuter>();
             services.AddSingleton<ITableNameLookup, TableNameLookup>();
             services.AddSingleton<TableMetadata>();
             services.AddSingleton<IDatabaseMetadata, DatabaseMetadata<TContext>>();
@@ -109,6 +115,18 @@ namespace SER.Graphql.Reflection.NetCore.Custom
 
             services.AddScoped<IGraphRepository<IdentityRoleClaim<string>>, GenericGraphRepository<IdentityRoleClaim<string>, TContext, TUser, TRole, TUserRole>>();
             AddScopedModelsDynamic<TContext, TUser, TRole, TUserRole>(services);
+
+            // extension method defined in this project
+            services.AddTransient(s =>
+            {
+                var authSettings = new AuthorizationSettings();
+                authSettings.AddPolicy("Authenticated", p => p.RequireAuthenticatedUser());
+                return authSettings;
+            });
+
+            services.AddTransient<IValidationRule, CustomAuthorizationValidationRule>();
+
+          
         }
 
         public static void AddScopedModelsDynamic<TContext, TUser, TRole, TUserRole>(this IServiceCollection services)
@@ -126,6 +144,10 @@ namespace SER.Graphql.Reflection.NetCore.Custom
                 ServiceLifetime serviceLifetime = ServiceLifetime.Scoped;
                 // Console.WriteLine($"Dependencia IGraphRepository registrada type {type.Name}");
                 services.TryAdd(new ServiceDescriptor(interfaceType, inherateType, serviceLifetime));
+
+                var interfaceHandleType = typeof(IHandleMsg<>).MakeGenericType(new Type[] { type });
+                var inherateHandleType = typeof(HandleMsg<>).MakeGenericType(new Type[] { type });
+                services.TryAdd(new ServiceDescriptor(interfaceHandleType, inherateHandleType, ServiceLifetime.Singleton));
             }
         }
     }

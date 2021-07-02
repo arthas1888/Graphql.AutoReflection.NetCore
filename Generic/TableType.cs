@@ -69,7 +69,7 @@ namespace SER.Graphql.Reflection.NetCore
                    mainTableColumn.ColumnName,
                    resolve: context =>
                    {
-                       dynamic value = context.Source.GetPropertyValue(mainTableColumn.ColumnName);
+                       dynamic value = context.Source.GetPropertyValue(mainTableColumn.Type);
                        if (value == null) return null;
                        return System.Text.Json.JsonSerializer.Serialize(value);
                    }
@@ -115,7 +115,7 @@ namespace SER.Graphql.Reflection.NetCore
                     mainTableColumn.ColumnName,
                     resolve: context =>
                     {
-                        dynamic point = context.Source.GetPropertyValue(mainTableColumn.ColumnName);
+                        dynamic point = context.Source.GetPropertyValue(mainTableColumn.Type);
                         if (point == null) return null;
                         return JsonExtensions.SerializeWithGeoJson(point, formatting: Formatting.None);
                     }
@@ -129,7 +129,7 @@ namespace SER.Graphql.Reflection.NetCore
                     mainTableColumn.ColumnName,
                     resolve: context =>
                     {
-                        var value = context.Source.GetPropertyValue(mainTableColumn.ColumnName);
+                        var value = context.Source.GetPropertyValue(mainTableColumn.Type);
                         if (value == null) return null;
                         return ((TimeSpan)value).ToString();
                     }
@@ -147,7 +147,7 @@ namespace SER.Graphql.Reflection.NetCore
                 if (mainTableColumn.Type.IsEnum)
                 {
                     FillArgs($"{mainTableColumn.ColumnName}_enum", typeof(int));
-                    Field<IntGraphType>($"{mainTableColumn.ColumnName}_value", resolve: context => (int)context.Source.GetPropertyValue(mainTableColumn.ColumnName));
+                    Field<IntGraphType>($"{mainTableColumn.ColumnName}_value", resolve: context => (int)context.Source.GetPropertyValue(mainTableColumn.Type));
                 }
             }
 
@@ -162,7 +162,7 @@ namespace SER.Graphql.Reflection.NetCore
                    {
                        Type = typeof(string).GetGraphTypeFromType(true),
                        Name = columnMetadata.ColumnName,
-                       Resolver = new JsonResolver(columnMetadata.ColumnName)
+                       Resolver = new JsonResolver(columnMetadata.Type)
                    }
                 );
                 FillArguments(queryArguments, columnMetadata.ColumnName, columnMetadata.Type);
@@ -228,7 +228,7 @@ namespace SER.Graphql.Reflection.NetCore
                     {
                         Type = typeof(string).GetGraphTypeFromType(true),
                         Name = columnMetadata.ColumnName,
-                        Resolver = new PointResolver(columnMetadata.ColumnName)
+                        Resolver = new PointResolver(columnMetadata.Type)
                     }
                 );
                 FillArguments(queryArguments, columnMetadata.ColumnName, columnMetadata.Type);
@@ -240,7 +240,7 @@ namespace SER.Graphql.Reflection.NetCore
                     {
                         Type = typeof(string).GetGraphTypeFromType(true),
                         Name = columnMetadata.ColumnName,
-                        Resolver = new TimeSpanResolver(columnMetadata.ColumnName)
+                        Resolver = new TimeSpanResolver(columnMetadata.Type)
                     }
                );
                 FillArguments(queryArguments, columnMetadata.ColumnName, columnMetadata.Type);
@@ -261,7 +261,7 @@ namespace SER.Graphql.Reflection.NetCore
                         {
                             Type = typeof(int).GetGraphTypeFromType(true),
                             Name = $"{columnMetadata.ColumnName}_value",
-                            Resolver = new EnumResolver(columnMetadata.ColumnName)
+                            Resolver = new EnumResolver(columnMetadata.Type)
                         }
                     );
                 }
@@ -285,19 +285,18 @@ namespace SER.Graphql.Reflection.NetCore
             });
         }
 
-        private ListGraphType<ObjectGraphType> GetPrimaryListInstances(ColumnMetadata columnMetadata,
+        private dynamic GetPrimaryListInstances(ColumnMetadata columnMetadata,
            QueryArguments queryThirdArguments = null)
         {
             var metaTable = _dbMetadata.GetTableMetadatas().FirstOrDefault(x => x.Type.Name == columnMetadata.Type.Name);
 
-            ListGraphType<ObjectGraphType> listGraphType = null;
-            if (!_tableNameLookup.ExistListGraphType(columnMetadata.ColumnName))
+            dynamic listGraphType = null;
+            if (!_tableNameLookup.ExistListGraphType($"{columnMetadata.ColumnName}_primary_list"))
             {
                 var tableType = GetSecondGraphType(columnMetadata, queryThirdArguments, metaTable);
-                listGraphType = new ListGraphType<ObjectGraphType>
-                {
-                    ResolvedType = tableType
-                };
+                var inherateListType = typeof(ListGraphType<>).MakeGenericType(new Type[] { tableType.GetType() });
+                listGraphType = Activator.CreateInstance(inherateListType);
+                listGraphType.ResolvedType = tableType;
                 // Field<ListGraphType<CityType>>(nameof(State.cities));
             }
             else
@@ -307,25 +306,22 @@ namespace SER.Graphql.Reflection.NetCore
                     FillArguments(queryThirdArguments, tableColumn.ColumnName, tableColumn.Type);
                 }
             }
-
-            return _tableNameLookup.GetOrInsertListGraphType(columnMetadata.ColumnName, listGraphType);
+            return _tableNameLookup.GetOrInsertListGraphType($"{columnMetadata.ColumnName}_primary_list", listGraphType);
 
         }
 
-        private ListGraphType<ObjectGraphType> GetInternalListInstances(ColumnMetadata columnMetadata,
+        private dynamic GetInternalListInstances(ColumnMetadata columnMetadata,
             QueryArguments queryThirdArguments = null)
         {
             var metaTable = _dbMetadata.GetTableMetadatas().FirstOrDefault(x => x.Type.Name == columnMetadata.Type.Name);
 
-            ListGraphType<ObjectGraphType> listGraphType = null;
+            dynamic listGraphType = null;
             if (!_tableNameLookup.ExistSecondListGraphType($"{columnMetadata.ColumnName}_second_list"))
             {
                 var tableType = GetThirdGraphType(metaTable, columnMetadata, queryThirdArguments);
-                listGraphType = new ListGraphType<ObjectGraphType>
-                {
-                    ResolvedType = tableType
-                };
-                // Field<ListGraphType<CityType>>(nameof(State.cities));
+                var inherateListType = typeof(ListGraphType<>).MakeGenericType(new Type[] { tableType.GetType() });
+                listGraphType = Activator.CreateInstance(inherateListType);
+                listGraphType.ResolvedType = tableType;
             }
             else
             {
@@ -338,7 +334,7 @@ namespace SER.Graphql.Reflection.NetCore
             return _tableNameLookup.GetOrInsertSecondListGraphType($"{columnMetadata.ColumnName}_second_list", listGraphType);
         }
 
-        private dynamic GetSecondGraphType(ColumnMetadata columnMetadata, QueryArguments queryArguments, TableMetadata metaTable = null)
+        private dynamic GetSecondGraphType(ColumnMetadata columnMetadata, QueryArguments queryArguments, TableMetadata metaTable = null, bool isList = false)
         {
             string key = $"Internal_{columnMetadata.Type.Name}";
             dynamic objectGraphType = null;
@@ -348,8 +344,7 @@ namespace SER.Graphql.Reflection.NetCore
             {
                 //Creacion de instancia
                 //objectGraphType = new ObjectGraphType();
-                var inherateType = typeof(ObjectGraphType<>).MakeGenericType(new Type[] { columnMetadata.Type });
-
+                var inherateType = typeof(ObjectGraphType<>).MakeGenericType(new Type[] { columnMetadata.Type });                
                 objectGraphType = Activator.CreateInstance(inherateType);
                 objectGraphType.Name = key;
                 var permission = columnMetadata.Type.Name.ToLower();
@@ -391,9 +386,7 @@ namespace SER.Graphql.Reflection.NetCore
                 objectGraphInternal.Name = key;
                 var permission = columnMetadata.Type.Name.ToLower();
                 var friendlyTableName = Generic.StringExt.CanonicalName(Utilities.StringExt.ToSnakeCase(columnMetadata.Type.Name));
-                // habilitar permisos para tablas internas
-                //if (!_crud)
-                //    objectGraphInternal.ValidatePermissions(permission, friendlyTableName, columnMetadata.DataType);
+
 
                 foreach (var tableColumn in metaTable.Columns)
                 {
@@ -404,7 +397,7 @@ namespace SER.Graphql.Reflection.NetCore
                            {
                                Type = typeof(string).GetGraphTypeFromType(true),
                                Name = tableColumn.ColumnName,
-                               Resolver = new JsonResolver(tableColumn.ColumnName)
+                               Resolver = new JsonResolver(tableColumn.Type)
                            }
                         );
                         FillArguments(queryArguments, tableColumn.ColumnName, tableColumn.Type);
@@ -431,8 +424,8 @@ namespace SER.Graphql.Reflection.NetCore
                         {
                             Console.WriteLine(e.ToString());
                             objectGraphInternal.Field(
-                              GraphUtils.ResolveGraphType(tableColumn.Type),
-                                columnMetadata.ColumnName
+                              GraphUtils.ResolveGraphType(typeof(string)),
+                                tableColumn.ColumnName
                             );
                             FillArguments(queryArguments, tableColumn.ColumnName, tableColumn.Type);
                         }
@@ -465,7 +458,7 @@ namespace SER.Graphql.Reflection.NetCore
                             {
                                 Type = typeof(string).GetGraphTypeFromType(true),
                                 Name = columnMetadata.ColumnName,
-                                Resolver = new PointResolver(columnMetadata.ColumnName)
+                                Resolver = new PointResolver(columnMetadata.Type)
                             }
                         );
                         FillArguments(queryArguments, columnMetadata.ColumnName, columnMetadata.Type);
@@ -477,7 +470,7 @@ namespace SER.Graphql.Reflection.NetCore
                             {
                                 Type = typeof(string).GetGraphTypeFromType(true),
                                 Name = tableColumn.ColumnName,
-                                Resolver = new TimeSpanResolver(tableColumn.ColumnName)
+                                Resolver = new TimeSpanResolver(tableColumn.Type)
                             }
                        );
                         FillArguments(queryArguments, tableColumn.ColumnName, tableColumn.Type);
@@ -498,7 +491,7 @@ namespace SER.Graphql.Reflection.NetCore
                                 {
                                     Type = typeof(int).GetGraphTypeFromType(true),
                                     Name = $"{columnMetadata.ColumnName}_value",
-                                    Resolver = new EnumResolver(columnMetadata.ColumnName)
+                                    Resolver = new EnumResolver(columnMetadata.Type)
                                 }
                             );
                         }
@@ -519,7 +512,7 @@ namespace SER.Graphql.Reflection.NetCore
         {
             string key = $"Fourth_{columnMetadata.Type.Name}";
             dynamic objectGraphInternal = null;
-            ListGraphType<ObjectGraphType> listGraphType = null;
+            dynamic listGraphType = null;
 
             if ((isList && !_tableNameLookup.ExistListGraphType(key + "_list")) || (!isList && !_tableNameLookup.ExistGraphType(key)))
             {
@@ -529,10 +522,9 @@ namespace SER.Graphql.Reflection.NetCore
 
                 if (isList)
                 {
-                    listGraphType = new ListGraphType<ObjectGraphType>
-                    {
-                        ResolvedType = objectGraphInternal
-                    };
+                    var inherateListType = typeof(ListGraphType<>).MakeGenericType(new Type[] { objectGraphInternal.GetType() });
+                    listGraphType = Activator.CreateInstance(inherateListType);
+                    listGraphType.ResolvedType = objectGraphInternal;
                 }
 
                 foreach (var tableColumn in metaTable.Columns)
@@ -544,7 +536,7 @@ namespace SER.Graphql.Reflection.NetCore
                             {
                                 Type = typeof(string).GetGraphTypeFromType(true),
                                 Name = tableColumn.ColumnName,
-                                Resolver = new TimeSpanResolver(tableColumn.ColumnName)
+                                Resolver = new TimeSpanResolver(tableColumn.Type)
                             }
                        );
                         FillArguments(queryArguments, tableColumn.ColumnName, tableColumn.Type);
@@ -565,7 +557,7 @@ namespace SER.Graphql.Reflection.NetCore
                                 {
                                     Type = typeof(int).GetGraphTypeFromType(true),
                                     Name = $"{tableColumn.ColumnName}_value",
-                                    Resolver = new EnumResolver(tableColumn.ColumnName)
+                                    Resolver = new EnumResolver(tableColumn.Type)
                                 }
                             );
                         }
@@ -691,16 +683,16 @@ namespace SER.Graphql.Reflection.NetCore
 
     public class TimeSpanResolver : IFieldResolver
     {
-        private string _nameField;
+        private Type _typeField;
 
-        public TimeSpanResolver(string nameField)
+        public TimeSpanResolver(Type typeField)
         {
-            _nameField = nameField;
+            _typeField = typeField;
         }
 
         public object Resolve(IResolveFieldContext context)
         {
-            var value = context.Source.GetPropertyValue(_nameField);
+            var value = context.Source.GetPropertyValue(_typeField);
             if (value == null) return null;
             return ((TimeSpan)value).ToString();
         }
@@ -709,16 +701,16 @@ namespace SER.Graphql.Reflection.NetCore
 
     public class JsonResolver : IFieldResolver
     {
-        private string _nameField;
+        private Type _typeField;
 
-        public JsonResolver(string nameField)
+        public JsonResolver(Type typeField)
         {
-            _nameField = nameField;
+            _typeField = typeField;
         }
 
         public object Resolve(IResolveFieldContext context)
         {
-            var value = context.Source.GetPropertyValue(_nameField);
+            var value = context.Source.GetPropertyValue(_typeField);
             if (value == null) return null;
             return System.Text.Json.JsonSerializer.Serialize(value);
         }
@@ -727,16 +719,16 @@ namespace SER.Graphql.Reflection.NetCore
 
     public class EnumResolver : IFieldResolver
     {
-        private string _nameField;
+        private Type _typeField;
 
-        public EnumResolver(string nameField)
+        public EnumResolver(Type typeField)
         {
-            _nameField = nameField;
+            _typeField = typeField;
         }
 
         public object Resolve(IResolveFieldContext context)
         {
-            var value = context.Source.GetPropertyValue(_nameField);
+            var value = context.Source.GetPropertyValue(_typeField);
             if (value == null) return null;
             return (int)value;
         }

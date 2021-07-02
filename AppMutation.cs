@@ -8,6 +8,7 @@ using GraphQL.Authorization;
 using Microsoft.Extensions.Options;
 using SER.Graphql.Reflection.NetCore.Builder;
 using GraphQL.DataLoader;
+using GraphQL;
 
 namespace SER.Graphql.Reflection.NetCore
 {
@@ -33,7 +34,8 @@ namespace SER.Graphql.Reflection.NetCore
             _optionsDelegate = optionsDelegate;
             _accessor = accessor;
 
-            this.AuthorizeWith("Authorized");
+            this.RequireAuthentication();
+            Name = "Mutation";
 
             foreach (var metaTable in _dbMetadata.GetTableMetadatas())
             {

@@ -75,7 +75,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                     objectSumGraphType = Activator.CreateInstance(inherateType, new object[] { _dbMetadata, metaTable, _tableNameLookup, _optionsDelegate });
                 }
                 var sumTableType = _tableNameLookup.GetOrInsertGraphType($"{metaTable.Type.Name}_sum_plus", objectSumGraphType);
-                var ttype = typeof(TableType<>).MakeGenericType(new Type[] { metaTable.Type });               
+                var ttype = typeof(TableType<>).MakeGenericType(new Type[] { metaTable.Type });
 
                 AddField(new FieldType
                 {
@@ -86,7 +86,8 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                     Arguments = new QueryArguments(tableType.TableArgs)
                 });
 
-                var listType = new ListGraphType<ObjectGraphType<dynamic>>();
+                var inherateListType = typeof(ListGraphType<>).MakeGenericType(new Type[] { tableType.GetType() });
+                dynamic listType = Activator.CreateInstance(inherateListType);
                 listType.ResolvedType = tableType;
 
                 AddField(new FieldType

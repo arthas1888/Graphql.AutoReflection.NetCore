@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using GraphQL.Instrumentation;
-using GraphQL.Server.Internal;
-using GraphQL.Server.Transports.AspNetCore.Common;
 using GraphQL.Types;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,7 +11,6 @@ using System.Net.Http.Headers;
 using System.Threading;
 using GraphQL;
 using GraphQL.Server.Transports.AspNetCore;
-using GraphQL.Server.Common;
 using System.Net;
 using GraphQL.Validation;
 using GraphQL.Server;
@@ -238,7 +235,6 @@ namespace SER.Graphql.Reflection.NetCore.Custom
                 _.ComplexityConfiguration = _options.ComplexityConfiguration;
                 _.EnableMetrics = _options.EnableMetrics;
                 _.UnhandledExceptionDelegate = _options.UnhandledExceptionDelegate;
-                _.SchemaFilter = _options.SchemaFilter ?? new DefaultSchemaFilter();
                 _.CancellationToken = token;
 
                 foreach (var listener in _listeners)
@@ -247,10 +243,6 @@ namespace SER.Graphql.Reflection.NetCore.Custom
                 }
                 var listenerData = context.RequestServices.GetRequiredService<DataLoaderDocumentListener>();
                 _.Listeners.Add(listenerData);
-                if (_settings.EnableMetrics)
-                {
-                    _.FieldMiddleware.Use<InstrumentFieldsMiddleware>();
-                }
             });
 
         protected virtual CancellationToken GetCancellationToken(HttpContext context) => context.RequestAborted;
