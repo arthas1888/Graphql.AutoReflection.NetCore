@@ -69,7 +69,8 @@ namespace SER.Graphql.Reflection.NetCore
                    mainTableColumn.ColumnName,
                    resolve: context =>
                    {
-                       dynamic value = context.Source.GetPropertyValue(mainTableColumn.Type);
+                       var pi = parentType.GetProperty(mainTableColumn.ColumnName);
+                       dynamic value = pi.GetValue(context.Source);
                        if (value == null) return null;
                        return System.Text.Json.JsonSerializer.Serialize(value);
                    }
@@ -115,7 +116,8 @@ namespace SER.Graphql.Reflection.NetCore
                     mainTableColumn.ColumnName,
                     resolve: context =>
                     {
-                        dynamic point = context.Source.GetPropertyValue(mainTableColumn.Type);
+                        var pi = parentType.GetProperty(mainTableColumn.ColumnName);
+                        dynamic point = pi.GetValue(context.Source);
                         if (point == null) return null;
                         return JsonExtensions.SerializeWithGeoJson(point, formatting: Formatting.None);
                     }
@@ -129,7 +131,8 @@ namespace SER.Graphql.Reflection.NetCore
                     mainTableColumn.ColumnName,
                     resolve: context =>
                     {
-                        var value = context.Source.GetPropertyValue(mainTableColumn.Type);
+                        var pi = parentType.GetProperty(mainTableColumn.ColumnName);
+                        var value = pi.GetValue(context.Source);
                         if (value == null) return null;
                         return ((TimeSpan)value).ToString();
                     }
@@ -147,7 +150,15 @@ namespace SER.Graphql.Reflection.NetCore
                 if (mainTableColumn.Type.IsEnum)
                 {
                     FillArgs($"{mainTableColumn.ColumnName}_enum", typeof(int));
-                    Field<IntGraphType>($"{mainTableColumn.ColumnName}_value", resolve: context => (int)context.Source.GetPropertyValue(mainTableColumn.Type));
+                    AddField(
+                        new FieldType
+                        {
+                            Type = typeof(int).GetGraphTypeFromType(true),
+                            Name = $"{mainTableColumn.ColumnName}_value",
+                            Resolver = new EnumResolver(parentType, mainTableColumn.ColumnName)
+                        }
+                    );
+
                 }
             }
 
@@ -162,7 +173,7 @@ namespace SER.Graphql.Reflection.NetCore
                    {
                        Type = typeof(string).GetGraphTypeFromType(true),
                        Name = columnMetadata.ColumnName,
-                       Resolver = new JsonResolver(columnMetadata.Type)
+                       Resolver = new JsonResolver(parentType, columnMetadata.ColumnName)
                    }
                 );
                 FillArguments(queryArguments, columnMetadata.ColumnName, columnMetadata.Type);
@@ -228,7 +239,7 @@ namespace SER.Graphql.Reflection.NetCore
                     {
                         Type = typeof(string).GetGraphTypeFromType(true),
                         Name = columnMetadata.ColumnName,
-                        Resolver = new PointResolver(columnMetadata.Type)
+                        Resolver = new PointResolver(parentType, columnMetadata.ColumnName)
                     }
                 );
                 FillArguments(queryArguments, columnMetadata.ColumnName, columnMetadata.Type);
@@ -240,7 +251,7 @@ namespace SER.Graphql.Reflection.NetCore
                     {
                         Type = typeof(string).GetGraphTypeFromType(true),
                         Name = columnMetadata.ColumnName,
-                        Resolver = new TimeSpanResolver(columnMetadata.Type)
+                        Resolver = new TimeSpanResolver(parentType, columnMetadata.ColumnName)
                     }
                );
                 FillArguments(queryArguments, columnMetadata.ColumnName, columnMetadata.Type);
@@ -261,7 +272,7 @@ namespace SER.Graphql.Reflection.NetCore
                         {
                             Type = typeof(int).GetGraphTypeFromType(true),
                             Name = $"{columnMetadata.ColumnName}_value",
-                            Resolver = new EnumResolver(columnMetadata.Type)
+                            Resolver = new EnumResolver(parentType, columnMetadata.ColumnName)
                         }
                     );
                 }
@@ -397,7 +408,7 @@ namespace SER.Graphql.Reflection.NetCore
                            {
                                Type = typeof(string).GetGraphTypeFromType(true),
                                Name = tableColumn.ColumnName,
-                               Resolver = new JsonResolver(tableColumn.Type)
+                               Resolver = new JsonResolver(metaTable.Type, tableColumn.ColumnName)
                            }
                         );
                         FillArguments(queryArguments, tableColumn.ColumnName, tableColumn.Type);
@@ -458,7 +469,7 @@ namespace SER.Graphql.Reflection.NetCore
                             {
                                 Type = typeof(string).GetGraphTypeFromType(true),
                                 Name = columnMetadata.ColumnName,
-                                Resolver = new PointResolver(columnMetadata.Type)
+                                Resolver = new PointResolver(metaTable.Type, columnMetadata.ColumnName)
                             }
                         );
                         FillArguments(queryArguments, columnMetadata.ColumnName, columnMetadata.Type);
@@ -470,7 +481,7 @@ namespace SER.Graphql.Reflection.NetCore
                             {
                                 Type = typeof(string).GetGraphTypeFromType(true),
                                 Name = tableColumn.ColumnName,
-                                Resolver = new TimeSpanResolver(tableColumn.Type)
+                                Resolver = new TimeSpanResolver(metaTable.Type, tableColumn.ColumnName)
                             }
                        );
                         FillArguments(queryArguments, tableColumn.ColumnName, tableColumn.Type);
@@ -491,7 +502,7 @@ namespace SER.Graphql.Reflection.NetCore
                                 {
                                     Type = typeof(int).GetGraphTypeFromType(true),
                                     Name = $"{columnMetadata.ColumnName}_value",
-                                    Resolver = new EnumResolver(columnMetadata.Type)
+                                    Resolver = new EnumResolver(metaTable.Type, columnMetadata.ColumnName)
                                 }
                             );
                         }
@@ -536,7 +547,7 @@ namespace SER.Graphql.Reflection.NetCore
                             {
                                 Type = typeof(string).GetGraphTypeFromType(true),
                                 Name = tableColumn.ColumnName,
-                                Resolver = new TimeSpanResolver(tableColumn.Type)
+                                Resolver = new TimeSpanResolver(metaTable.Type, tableColumn.ColumnName)
                             }
                        );
                         FillArguments(queryArguments, tableColumn.ColumnName, tableColumn.Type);
@@ -557,7 +568,7 @@ namespace SER.Graphql.Reflection.NetCore
                                 {
                                     Type = typeof(int).GetGraphTypeFromType(true),
                                     Name = $"{tableColumn.ColumnName}_value",
-                                    Resolver = new EnumResolver(tableColumn.Type)
+                                    Resolver = new EnumResolver(metaTable.Type, tableColumn.ColumnName)
                                 }
                             );
                         }
@@ -684,15 +695,18 @@ namespace SER.Graphql.Reflection.NetCore
     public class TimeSpanResolver : IFieldResolver
     {
         private Type _typeField;
+        private string _fieldName;
 
-        public TimeSpanResolver(Type typeField)
+        public TimeSpanResolver(Type typeField, string fieldName)
         {
             _typeField = typeField;
+            _fieldName = fieldName;
         }
 
         public object Resolve(IResolveFieldContext context)
         {
-            var value = context.Source.GetPropertyValue(_typeField);
+            var pi = _typeField.GetProperty(_fieldName);
+            var value = pi.GetValue(context.Source);
             if (value == null) return null;
             return ((TimeSpan)value).ToString();
         }
@@ -702,15 +716,18 @@ namespace SER.Graphql.Reflection.NetCore
     public class JsonResolver : IFieldResolver
     {
         private Type _typeField;
+        private string _fieldName;
 
-        public JsonResolver(Type typeField)
+        public JsonResolver(Type typeField, string fieldName)
         {
             _typeField = typeField;
+            _fieldName = fieldName;
         }
 
         public object Resolve(IResolveFieldContext context)
         {
-            var value = context.Source.GetPropertyValue(_typeField);
+            var pi = _typeField.GetProperty(_fieldName);
+            dynamic value = pi.GetValue(context.Source);
             if (value == null) return null;
             return System.Text.Json.JsonSerializer.Serialize(value);
         }
@@ -720,15 +737,18 @@ namespace SER.Graphql.Reflection.NetCore
     public class EnumResolver : IFieldResolver
     {
         private Type _typeField;
+        private string _fieldName;
 
-        public EnumResolver(Type typeField)
+        public EnumResolver(Type typeField, string fieldName)
         {
             _typeField = typeField;
+            _fieldName = fieldName;
         }
 
         public object Resolve(IResolveFieldContext context)
         {
-            var value = context.Source.GetPropertyValue(_typeField);
+            var pi = _typeField.GetProperty(_fieldName);
+            var value = pi.GetValue(context.Source);
             if (value == null) return null;
             return (int)value;
         }

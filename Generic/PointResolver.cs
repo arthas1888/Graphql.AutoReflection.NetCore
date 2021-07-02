@@ -11,15 +11,18 @@ namespace SER.Graphql.Reflection.NetCore.Generic
     public class PointResolver : IFieldResolver
     {
         private Type _typeField;
+        private string _fieldName;
 
-        public PointResolver(Type typeField)
+        public PointResolver(Type typeField, string fieldName)
         {
             _typeField = typeField;
+            _fieldName = fieldName;
         }
 
         public object Resolve(IResolveFieldContext context)
         {
-            dynamic point = context.Source.GetPropertyValue(_typeField);
+            var pi = _typeField.GetProperty(_fieldName);
+            dynamic point = pi.GetValue(_typeField);
             if (point == null) return null;
             return JsonExtensions.SerializeWithGeoJson(point, formatting: Formatting.None);
 

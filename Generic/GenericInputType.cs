@@ -23,11 +23,11 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             Name = $"{metaTable.Type.Name.ToLower().ToSnakeCase()}_input";
             foreach (var tableColumn in metaTable.Columns)
             {
-                InitGraphTableColumn(tableColumn);
+                InitGraphTableColumn(tableColumn, metaTable.Type);
             }
         }
 
-        private void InitGraphTableColumn(ColumnMetadata columnMetadata)
+        private void InitGraphTableColumn(ColumnMetadata columnMetadata, Type parentType)
         {
             //Console.WriteLine($"{columnMetadata.ColumnName} {columnMetadata.DataType}");
             if (columnMetadata.DataType == "uniqueidentifier") return;
@@ -61,7 +61,11 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             }
             else if (columnMetadata.Type.IsEnum)
             {
-                Field<IntGraphType>(columnMetadata.ColumnName, resolve: context => (int)context.Source.GetPropertyValue(columnMetadata.Type));
+                Field<IntGraphType>(columnMetadata.ColumnName, resolve: context =>
+                {
+                    var pi = parentType.GetProperty(columnMetadata.ColumnName);
+                    return (int)pi.GetValue(context.Source);
+                });
             }
             else if (columnMetadata.Type != _optionsDelegate.CurrentValue.UserType
                      && columnMetadata.Type != _optionsDelegate.CurrentValue.RoleType
