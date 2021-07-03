@@ -22,7 +22,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
         public object Resolve(IResolveFieldContext context)
         {
             var pi = _typeField.GetProperty(_fieldName);
-            dynamic point = pi.GetValue(_typeField);
+            dynamic point = pi.GetValue(context.Source);
             if (point == null) return null;
             return JsonExtensions.SerializeWithGeoJson(point, formatting: Formatting.None);
 
