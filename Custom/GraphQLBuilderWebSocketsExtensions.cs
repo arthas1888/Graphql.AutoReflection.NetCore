@@ -2,6 +2,7 @@
 using GraphQL.Server.Transports.Subscriptions.Abstractions;
 using GraphQL.Server.Transports.WebSockets;
 using Microsoft.Extensions.DependencyInjection;
+using SER.Graphql.Reflection.NetCore.Permissions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,13 +18,15 @@ namespace SER.Graphql.Reflection.NetCore.Custom
         /// </summary>
         /// <param name="builder"></param>
         /// <returns></returns>
-        public static void AddCustomWebSockets(this IServiceCollection services)
+        public static IGraphQLBuilder AddCustomWebSockets(this IGraphQLBuilder builder)
         {
-            services
+            builder.Services
                 .AddTransient(typeof(IWebSocketConnectionFactory<>), typeof(WebSocketConnectionFactory<>))
                 .AddTransient<IOperationMessageListener, LogMessagesListener>()
-                .AddTransient<IOperationMessageListener, ProtocolMessageListener>();
+                .AddTransient<IOperationMessageListener, ProtocolMessageListener>()
+                .AddTransient<IOperationMessageListener, AuthenticationListener>();
 
+            return builder;
         }
     }
 }

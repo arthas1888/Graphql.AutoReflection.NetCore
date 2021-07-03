@@ -83,7 +83,8 @@ namespace SER.Graphql.Reflection.NetCore
                     Subscriber = eventStreamResolver,
                     Arguments = new QueryArguments(
                         new QueryArgument<StringGraphType> { Name = "field" },
-                        new QueryArgument<IntGraphType> { Name = "value" }
+                        new QueryArgument<IntGraphType> { Name = "value" },
+                        new QueryArgument<StringGraphType> { Name = "string_value" }
                     ),
                 });
             }
@@ -127,15 +128,17 @@ namespace SER.Graphql.Reflection.NetCore
 
             string field = context.GetArgument<string>("field");
             int value = context.GetArgument<int>("value");
+            string stringValue = context.GetArgument<string>("string_value");
 
             IHandleMsg<T> service = (IHandleMsg<T>)_httpContextAccessor.HttpContext.RequestServices.GetService(typeof(IHandleMsg<T>));
             var objs = service.ObservableObj();
-            if (!string.IsNullOrEmpty(field) && value > 0)
+            if (!string.IsNullOrEmpty(field) && (value > 0 || !string.IsNullOrEmpty(stringValue)))
             {
                 var pi = typeof(T).GetProperty(field);
                 if (pi != null)
                 {
-                    return objs.Where(x => (int)pi.GetValue(x) == (int)value);
+                    if (!string.IsNullOrEmpty(stringValue)) return objs.Where(x => (string)pi.GetValue(x) == stringValue);
+                    return objs.Where(x => (int)pi.GetValue(x) == value);
                 }
                 else
                 {

@@ -27,29 +27,29 @@ namespace SER.Graphql.Reflection.NetCore.Custom
 {
     public static class ServiceCollectionExtensions
     {
-        public static void AddConfigGraphQl<TContext>(this IServiceCollection services)
+        public static IGraphQLBuilder AddConfigGraphQl<TContext>(this IServiceCollection services, Action<GraphQLOptions, IServiceProvider> configureOptions)
           where TContext : DbContext
-           => AddConfigGraphQl<TContext, object, object, object>(services);
+           => AddConfigGraphQl<TContext, object, object, object>(services, configureOptions);
 
-        public static void AddConfigGraphQl<TContext, TUser>(this IServiceCollection services)
+        public static IGraphQLBuilder AddConfigGraphQl<TContext, TUser>(this IServiceCollection services, Action<GraphQLOptions, IServiceProvider> configureOptions)
           where TContext : DbContext
           where TUser : class
-           => AddConfigGraphQl<TContext, TUser, object, object>(services);
+           => AddConfigGraphQl<TContext, TUser, object, object>(services, configureOptions);
 
-        public static void AddConfigGraphQl<TContext, TUser, TRole>(this IServiceCollection services)
+        public static IGraphQLBuilder AddConfigGraphQl<TContext, TUser, TRole>(this IServiceCollection services, Action<GraphQLOptions, IServiceProvider> configureOptions)
            where TContext : DbContext
            where TUser : class
            where TRole : class
-            => AddConfigGraphQl<TContext, TUser, TRole, object>(services);
+            => AddConfigGraphQl<TContext, TUser, TRole, object>(services, configureOptions);
 
-        public static void AddConfigGraphQl<TContext, TUser, TRole, TUserRole>(this IServiceCollection services)
+        public static IGraphQLBuilder AddConfigGraphQl<TContext, TUser, TRole, TUserRole>(this IServiceCollection services,
+            Action<GraphQLOptions, IServiceProvider> configureOptions)
         where TContext : DbContext
         where TUser : class
         where TRole : class
         where TUserRole : class
         {
             services.AddHttpContextAccessor();
-            services.AddTransient<IOperationMessageListener, AuthenticationListener>();
 
             services.AddSingleton<IDocumentExecuter, MyDocumentExecuter>();
             services.AddSingleton<ITableNameLookup, TableNameLookup>();
@@ -66,27 +66,11 @@ namespace SER.Graphql.Reflection.NetCore.Custom
             services.AddScoped<ISchema, AppSchema<TUser, TRole, TUserRole>>();
 
             //permissions
-            services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
-            services.TryAddSingleton<IAuthorizationEvaluator, AuthorizationEvaluator>();
-
-            // services.AddTransient<IValidationRule, AuthorizationValidationRule>();
-
-            services.TryAddSingleton(s =>
-            {
-                var authSettings = new AuthorizationSettings();
-                // authSettings.AddPolicy("AdminPolicy", _ => _.RequireClaim("role", "Admin"));
-                authSettings.AddPolicy("Authorized", _ => _.RequireAuthenticatedUser());
-                return authSettings;
-            });
+            services.TryAddSingleton<IAuthorizationEvaluator, AuthorizationEvaluator>();           
 
             services.AddLogging(builder => builder.AddConsole());
-            services.AddHttpContextAccessor();
             services
-                .AddGraphQL(o =>
-                {
-                    o.EnableMetrics = false; // CurrentEnvironment.IsDevelopment();
-                    o.UnhandledExceptionDelegate = ctx => Console.WriteLine("error: " + ctx.OriginalException.Message);
-                })
+                .AddGraphQL(configureOptions)
                 .AddSystemTextJson()
                 .AddUserContextBuilder(ctx => new GraphQLUserContext { User = ctx.User })
                 .AddDataLoader()
@@ -116,17 +100,26 @@ namespace SER.Graphql.Reflection.NetCore.Custom
             services.AddScoped<IGraphRepository<IdentityRoleClaim<string>>, GenericGraphRepository<IdentityRoleClaim<string>, TContext, TUser, TRole, TUserRole>>();
             AddScopedModelsDynamic<TContext, TUser, TRole, TUserRole>(services);
 
+            return new GraphQLBuilder(services);
+        }
+
+        /// <summary>
+        /// Add required services for GraphQL authorization
+        /// </summary>
+        /// <param name="builder"></param>
+        /// <returns></returns>
+        public static void AddRequiredAuthorization(this IGraphQLBuilder builder)
+        {
             // extension method defined in this project
-            services.AddTransient(s =>
-            {
-                var authSettings = new AuthorizationSettings();
-                authSettings.AddPolicy("Authenticated", p => p.RequireAuthenticatedUser());
-                return authSettings;
-            });
+            builder.Services.AddTransient(s =>
+           {
+               var authSettings = new AuthorizationSettings();
+               // authSettings.AddPolicy("AdminPolicy", _ => _.RequireClaim("role", "Admin"));
+               authSettings.AddPolicy("Authenticated", p => p.RequireAuthenticatedUser());
+               return authSettings;
+           });
+            builder.Services.AddTransient<IValidationRule, CustomAuthorizationValidationRule>();
 
-            services.AddTransient<IValidationRule, CustomAuthorizationValidationRule>();
-
-          
         }
 
         public static void AddScopedModelsDynamic<TContext, TUser, TRole, TUserRole>(this IServiceCollection services)
@@ -149,6 +142,15 @@ namespace SER.Graphql.Reflection.NetCore.Custom
                 var inherateHandleType = typeof(HandleMsg<>).MakeGenericType(new Type[] { type });
                 services.TryAdd(new ServiceDescriptor(interfaceHandleType, inherateHandleType, ServiceLifetime.Singleton));
             }
+        }
+    }
+    internal sealed class GraphQLBuilder : IGraphQLBuilder
+    {
+        public IServiceCollection Services { get; }
+
+        public GraphQLBuilder(IServiceCollection services)
+        {
+            Services = services;
         }
     }
 }
