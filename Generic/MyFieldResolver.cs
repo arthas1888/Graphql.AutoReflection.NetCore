@@ -47,17 +47,17 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             var args = new List<object>();
             var includes = new List<string>();
 
-            //Console.WriteLine($" ----------------------- alias {alias}");
+            //Console.WriteLine($" ----------------------- alias {alias} Name {context.FieldAst.Name}");
             try
             {
                 //var listFieldType = ((dynamic)context.FieldDefinition.ResolvedType).ResolvedType.Fields;
 
-                if (alias.Contains("_list"))
+                if (context.FieldAst.Name.Contains("_list"))
                 {
                     GraphUtils.DetectChild<TUser, TRole, TUserRole>(context.FieldAst.SelectionSet.Selections, includes,
                         ((dynamic)context.FieldDefinition.ResolvedType).ResolvedType, args, whereArgs,
                         arguments: context.Arguments, mainType: _tableMetadata.Type);
-                    Console.WriteLine($"whereArgs: {whereArgs}");
+                    Console.WriteLine($"whereArgs list: {whereArgs} args {string.Join(", ", args)}");
 
                     return service
                         .GetAllAsync(alias, whereArgs: whereArgs.ToString(),
@@ -66,23 +66,23 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                             includeExpressions: includes, args: args.ToArray())
                         .Result;
                 }
-                else if (alias.Contains("_count"))
+                else if (context.FieldAst.Name.Contains("_count"))
                 {
                     GraphUtils.DetectChild<TUser, TRole, TUserRole>(context.FieldAst.SelectionSet.Selections, includes,
                         context.FieldDefinition.ResolvedType, args, whereArgs,
                         arguments: context.Arguments, mainType: _tableMetadata.Type);
-                    Console.WriteLine($"whereArgs: {whereArgs}");
+                    Console.WriteLine($"whereArgs count: {whereArgs}");
 
                     return service.GetCountQuery(whereArgs: whereArgs.ToString(),
                         includeExpressions: includes, args: args.ToArray());
                 }
-                else if (alias.Contains("_sum"))
+                else if (context.FieldAst.Name.Contains("_sum"))
                 {
                     GraphUtils.DetectChild<TUser, TRole, TUserRole>(context.FieldAst.SelectionSet.Selections, includes,
                         context.FieldDefinition.ResolvedType, args, whereArgs,
                         arguments: context.Arguments, mainType: _tableMetadata.Type);
                     string param = "";
-                    Console.WriteLine($"whereArgs: {whereArgs}");
+                    Console.WriteLine($"whereArgs sum: {whereArgs}");
                     if (context.FieldAst.SelectionSet.Selections != null)
                     {
                         foreach (Field field in context.FieldAst.SelectionSet.Selections)
@@ -108,7 +108,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                     GraphUtils.DetectChild<TUser, TRole, TUserRole>(context.FieldAst.SelectionSet.Selections, includes,
                         context.FieldDefinition.ResolvedType, args, whereArgs,
                         arguments: context.Arguments, mainType: _tableMetadata.Type);
-                    Console.WriteLine($"whereArgs: {whereArgs}");
+                    Console.WriteLine($"whereArgs single obj: {whereArgs}");
 
                     var dbEntity = service
                         .GetByIdAsync(alias, id, whereArgs: whereArgs.ToString(),
