@@ -65,8 +65,7 @@ namespace SER.Graphql.Reflection.NetCore.Custom
             services.AddScoped<FillDataExtensions>();
             services.AddScoped<ISchema, AppSchema<TUser, TRole, TUserRole>>();
 
-            //permissions
-            services.TryAddSingleton<IAuthorizationEvaluator, AuthorizationEvaluator>();           
+           
 
             services.AddLogging(builder => builder.AddConsole());
             services
@@ -110,6 +109,9 @@ namespace SER.Graphql.Reflection.NetCore.Custom
         /// <returns></returns>
         public static void AddRequiredAuthorization(this IGraphQLBuilder builder)
         {
+            //permissions
+            builder.Services.TryAddSingleton<IAuthorizationEvaluator, AuthorizationEvaluator>();
+
             // extension method defined in this project
             builder.Services.AddTransient(s =>
            {
