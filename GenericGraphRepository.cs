@@ -429,7 +429,7 @@ namespace SER.Graphql.Reflection.NetCore
                             if (propertyInfo.Name == "id") continue;
 
                             var oldValue = propertyInfo.GetValue(obj);
-                            var newValue = propertyInfo.GetValue(entity);
+                            dynamic newValue = propertyInfo.GetValue(entity);
 
                             // if (newValue == null && oldValue != null) continue;
                             // if (newValue == oldValue) continue;
@@ -505,11 +505,11 @@ namespace SER.Graphql.Reflection.NetCore
             }
             catch (Exception e)
             {
-                _logger.LogError($"ERROR {e} type {nameof(type)}");
+                _logger.LogError($"ERROR {e} type {type}");
             }
         }
 
-        public void UpdateListAsync<M>(int parentId, List<object> values, List<M> entities) where M : class
+        public void UpdateListAsync<M>(int parentId, ICollection<object> values, List<M> entities) where M : class
         {
             var iQueryable = _context.Set<M>();
             var keyProperty = typeof(M).GetProperties();
