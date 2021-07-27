@@ -45,7 +45,6 @@ namespace SER.Graphql.Reflection.NetCore
         private readonly TContext _context;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly FillDataExtensions _fillDataExtensions;
-        private IDataLoaderContextAccessor _dataLoader;
         private IConfiguration _config;
         private IMemoryCache _cache;
         private readonly ILogger _logger;
@@ -65,7 +64,6 @@ namespace SER.Graphql.Reflection.NetCore
         public GenericGraphRepository(TContext db,
             IHttpContextAccessor httpContextAccessor,
             FillDataExtensions fillDataExtensions,
-            IDataLoaderContextAccessor dataLoader,
             IConfiguration config,
             IOptionsMonitor<SERGraphQlOptions> optionsDelegate)
         {
@@ -78,7 +76,6 @@ namespace SER.Graphql.Reflection.NetCore
             _handleMsg = _httpContextAccessor.HttpContext.RequestServices.GetService<IHandleMsg<T>>();
             _logger = _httpContextAccessor.HttpContext.RequestServices.GetService<ILogger<GenericGraphRepository<T, TContext, TUser, TRole, TUserRole>>>();
             _fillDataExtensions = fillDataExtensions;
-            _dataLoader = dataLoader;
             _optionsDelegate = optionsDelegate;
             _cRepositoryLog = httpContextAccessor.HttpContext.RequestServices.GetService<AuditManager>();
         }
@@ -354,7 +351,7 @@ namespace SER.Graphql.Reflection.NetCore
             get { return _context.Set<T>(); }
         }
 
-        public async Task<T> Create(T entity, string alias = "")
+        public async Task<T> Create(T entity, string alias = "", bool sendObjFirebase = true, List<string> includeExpressions = null)
         {
             // var objstr = JsonSerializer.Serialize(entity);
             //_logger.LogInformation($"----------------------------objstr {objstr}");
@@ -378,7 +375,9 @@ namespace SER.Graphql.Reflection.NetCore
                     }, id: GetKey(entity), commit: true);
                 }
 
-                SendStatus(GraphGrpcStatus.CREATE, GetKey(entity));
+                includeExpressions?.ForEach(x => _context.Entry(obj).Reference(x).Load());
+
+                if (sendObjFirebase) SendStatus(GraphGrpcStatus.CREATE, GetKey(entity));
                 if (!string.IsNullOrEmpty(GetCurrentUser()))
                     _handleMsg.GetStream().OnNext(entity);
 
@@ -407,12 +406,12 @@ namespace SER.Graphql.Reflection.NetCore
             return entity.GetType().GetProperty(keyName).GetValue(entity, null).ToString();
         }
 
-        public Task<T> Update(int id, T entity, string alias = "")
+        public Task<T> Update(int id, T entity, string alias = "", bool sendObjFirebase = true, List<string> includeExpressions = null)
         {
             throw new NotImplementedException();
         }
 
-        public async Task<T> Update(int id, T entity, Dictionary<string, object> dict, string alias = "")
+        public async Task<T> Update(int id, T entity, Dictionary<string, object> dict, string alias = "", bool sendObjFirebase = true, List<string> includeExpressions = null)
         {
             var obj = GetModel.Find(id);
             if (obj != null)
@@ -433,7 +432,6 @@ namespace SER.Graphql.Reflection.NetCore
 
                             // if (newValue == null && oldValue != null) continue;
                             // if (newValue == oldValue) continue;
-
                             Type type = null;
                             var isList = !propertyInfo.PropertyType.IsArray && typeof(ICollection).IsAssignableFrom(propertyInfo.PropertyType);
                             if (isList)
@@ -473,10 +471,13 @@ namespace SER.Graphql.Reflection.NetCore
                     }
 
                     //_context.Entry(obj).State = EntityState.Modified;
-                    _context.SaveChanges();
-                    SendStatus(GraphGrpcStatus.UPDATE, id.ToString());
+                    await _context.SaveChangesAsync();
+                    includeExpressions?.ForEach(x => _context.Entry(obj).Reference(x).Load());
+
+                    if (sendObjFirebase) SendStatus(GraphGrpcStatus.UPDATE, id.ToString());
                     if (!string.IsNullOrEmpty(GetCurrentUser()))
                         _handleMsg.GetStream().OnNext(entity);
+
                 }
                 catch (ValidationException exc)
                 {
@@ -666,7 +667,7 @@ namespace SER.Graphql.Reflection.NetCore
             return Expression.Lambda<Func<M, bool>>(exp, parameter);
         }
 
-        public async Task<T> Delete(int id, string alias = "")
+        public async Task<T> Delete(int id, string alias = "", bool sendObjFirebase = true)
         {
             var obj = GetModel.Find(id);
             if (obj != null)
@@ -701,7 +702,7 @@ namespace SER.Graphql.Reflection.NetCore
 
                 var cacheKeySize = string.Format("_{0}_size", model);
                 _cache.Remove(cacheKeySize);
-                SendStatus(GraphGrpcStatus.DELETE, id.ToString());
+                if (sendObjFirebase) SendStatus(GraphGrpcStatus.DELETE, id.ToString());
                 if (!string.IsNullOrEmpty(GetCurrentUser()))
                     _handleMsg.GetStream().OnNext(obj);
             }
@@ -720,6 +721,7 @@ namespace SER.Graphql.Reflection.NetCore
             {
                 try
                 {
+                    //_logger.LogInformation($" ---------------- entra aca!!!!!!!!");
                     _optionsDelegate.CurrentValue.CallbackStatus.Invoke(new GraphStatusRequest
                     {
                         ClassName = typeof(T).Name,

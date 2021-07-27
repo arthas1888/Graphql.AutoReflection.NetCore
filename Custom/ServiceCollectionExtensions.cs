@@ -99,6 +99,7 @@ namespace SER.Graphql.Reflection.NetCore.Custom
             services.AddScoped<IGraphRepository<IdentityRoleClaim<string>>, GenericGraphRepository<IdentityRoleClaim<string>, TContext, TUser, TRole, TUserRole>>();
             AddScopedModelsDynamic<TContext, TUser, TRole, TUserRole>(services);
 
+
             return new GraphQLBuilder(services);
         }
 
@@ -114,14 +115,13 @@ namespace SER.Graphql.Reflection.NetCore.Custom
 
             // extension method defined in this project
             builder.Services.AddTransient(s =>
-           {
-               var authSettings = new AuthorizationSettings();
-               // authSettings.AddPolicy("AdminPolicy", _ => _.RequireClaim("role", "Admin"));
-               authSettings.AddPolicy("Authenticated", p => p.RequireAuthenticatedUser());
-               return authSettings;
-           });
-            builder.Services.AddTransient<IValidationRule, CustomAuthorizationValidationRule>();
-
+            {
+                var authSettings = new AuthorizationSettings();
+                // authSettings.AddPolicy("AdminPolicy", _ => _.RequireClaim("role", "Admin"));
+                authSettings.AddPolicy("Authenticated", p => p.RequireAuthenticatedUser());
+                return authSettings;
+            });
+            //builder.Services.AddTransient<IValidationRule, CustomAuthorizationValidationRule>();
         }
 
         public static void AddScopedModelsDynamic<TContext, TUser, TRole, TUserRole>(this IServiceCollection services)

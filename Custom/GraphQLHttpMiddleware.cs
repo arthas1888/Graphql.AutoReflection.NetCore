@@ -296,17 +296,18 @@ namespace SER.Graphql.Reflection.NetCore.Custom
                 Console.WriteLine($"_______________________________EEEEEEEEEEEEEEEEEEEEEErrrrrrrrrrrrrrrrrrrrrrrrrr {error} httpStatusCode {context.Response.StatusCode}");
                 if (context.Response.StatusCode == 400)
                     _logger.LogError($"_______________________________EEEEEEEEEEEEEEEEEEEEEErrrrrrrrrrrrrrrrrrrrrrrrrr {error}\nquery {result.Query}");
+
                 var ex = new ExecutionError(error.Message);
                 if (error.InnerException != null)
                 {
-                    ex = new ExecutionError(error.Message, error.InnerException);
+                    ex = new ExecutionError(error.InnerException.Message, error.InnerException);
                 }
                 errors.Add(ex);
             }
             if (!string.IsNullOrEmpty(msg) && msg.Equals("The operation was canceled."))
                 return;
 
-            result.Data = errors;
+            result.Errors.AddRange(errors);
             try
             {
                 await _writer.WriteAsync(context.Response.Body, result);

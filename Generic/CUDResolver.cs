@@ -33,8 +33,38 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             Type graphRepositoryType = typeof(IGraphRepository<>).MakeGenericType(new Type[] { _type });
             dynamic service = _httpContextAccessor.HttpContext.RequestServices.GetService(graphRepositoryType);
             var id = context.GetArgument<int?>("id");
+            var sendObjFirebase = context.GetArgument<bool?>("sendObjFirebase") ?? true;
             var deleteId = context.GetArgument<int?>($"{_type.Name.ToLower().ToSnakeCase()}Id");
             var alias = string.IsNullOrEmpty(context.FieldAst.Alias) ? context.FieldAst.Name : context.FieldAst.Alias;
+            var mainType = _type;
+
+            string model = "";
+            FieldType fieldType = null;
+            List<string> includes = new();
+            dynamic resolvedType = context.FieldDefinition.ResolvedType;
+
+            foreach (Field field in context.FieldAst.SelectionSet.Selections)
+            {
+                if (field.SelectionSet.Selections.Count > 0)
+                {
+                    model = field.Name;
+                    try
+                    {
+                        fieldType = ((IEnumerable<FieldType>)resolvedType.Fields).SingleOrDefault(x => x.Name == field.Name);
+                    }
+                    catch (Exception) { }
+                    if (fieldType != null)
+                    {
+                        // detect if field is object
+                        if (fieldType.ResolvedType.GetType().IsGenericType && fieldType.ResolvedType is not ListGraphType 
+                            && fieldType.ResolvedType.GetType().GetGenericTypeDefinition() == typeof(ObjectGraphType<>))
+                        {
+                            includes.Add(model);
+                        }
+                    }
+                }
+            }
+
 
             if (id.HasValue)
             {
@@ -42,9 +72,9 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                 object dbEntity = null;
                 var variable = context.Variables.FirstOrDefault(x => x.Name == (string)argName.Value.Value);
                 if (variable != null && variable.Value.GetType() == typeof(Dictionary<string, object>))
-                    dbEntity = service.Update(id.Value, entity, (Dictionary<string, object>)variable.Value, alias);
+                    dbEntity = service.Update(id.Value, entity, (Dictionary<string, object>)variable.Value, alias, sendObjFirebase, includes);
                 else
-                    dbEntity = service.Update(id.Value, entity, (Dictionary<string, object>)argName.Value.Value, alias);
+                    dbEntity = service.Update(id.Value, entity, (Dictionary<string, object>)argName.Value.Value, alias, sendObjFirebase, includes);
 
                 if (dbEntity == null)
                 {
@@ -56,7 +86,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
 
             if (deleteId.HasValue)
             {
-                var dbEntity = service.Delete(deleteId.Value, alias);
+                var dbEntity = service.Delete(deleteId.Value, alias, sendObjFirebase);
                 if (dbEntity == null)
                 {
                     GetError(context);
@@ -65,7 +95,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                 return dbEntity;
             }
             //var service = _httpContextAccessor.HttpContext.RequestServices.GetService<IGraphRepository<Permission>>();
-            return service.Create(entity, alias);
+            return service.Create(entity, alias, sendObjFirebase, includes);
         }
 
         private void GetError(IResolveFieldContext context)

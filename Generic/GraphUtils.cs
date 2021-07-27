@@ -230,7 +230,6 @@ namespace SER.Graphql.Reflection.NetCore.Generic
 
             if (mainModel == "" && arguments != null)
             {
-
                 var type = mainType;
                 foreach (var argument in arguments)
                 {
@@ -254,7 +253,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             {
                 foreach (Field field in selections)
                 {
-                    //Console.WriteLine($"name {field.Name}");
+                    // Console.WriteLine($"name {field.Name}");
                     if (field.SelectionSet.Selections.Count > 0)
                     {
                         model = field.Name;

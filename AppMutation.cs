@@ -64,7 +64,8 @@ namespace SER.Graphql.Reflection.NetCore
                     ResolvedType = tableType,
                     Resolver = new CUDResolver(type, _httpContextAccessor),
                     Arguments = new QueryArguments(
-                        new QueryArgument(typeof(InputObjectGraphType)) { Name = friendlyTableName, ResolvedType = genericInputType }
+                        new QueryArgument(typeof(InputObjectGraphType)) { Name = friendlyTableName, ResolvedType = genericInputType },
+                        new QueryArgument<BooleanGraphType> { Name = "sendObjFirebase" }
                     ),
                 });
 
@@ -76,7 +77,8 @@ namespace SER.Graphql.Reflection.NetCore
                     Resolver = new CUDResolver(type, _httpContextAccessor),
                     Arguments = new QueryArguments(
                         new QueryArgument(typeof(InputObjectGraphType)) { Name = friendlyTableName, ResolvedType = genericInputType },
-                        new QueryArgument<NonNullGraphType<IdGraphType>> { Name = "id" }
+                        new QueryArgument<NonNullGraphType<IdGraphType>> { Name = "id" },
+                        new QueryArgument<BooleanGraphType> { Name = "sendObjFirebase" }
                     )
                 });
 
@@ -85,7 +87,9 @@ namespace SER.Graphql.Reflection.NetCore
                     Name = $"delete_{friendlyTableName}",
                     Type = tableType.GetType(),
                     ResolvedType = tableType,
-                    Arguments = new QueryArguments(new QueryArgument<NonNullGraphType<IdGraphType>> { Name = $"{friendlyTableName}Id" }),
+                    Arguments = new QueryArguments(
+                        new QueryArgument<NonNullGraphType<IdGraphType>> { Name = $"{friendlyTableName}Id" },
+                        new QueryArgument<BooleanGraphType> { Name = "sendObjFirebase" }),
                     Resolver = new CUDResolver(type, _httpContextAccessor)
                 });
             }

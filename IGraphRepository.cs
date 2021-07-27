@@ -14,9 +14,9 @@ namespace SER.Graphql.Reflection.NetCore
             string orderBy = "", string whereArgs = "", int? take = null, int? offset = null, params object[] args);
         Task<T> GetByIdAsync(string alias, int id, List<string> includeExpressions = null,
           string whereArgs = "", params object[] args);
-        Task<T> Create(T entity, string alias = "");
-        Task<T> Update(int id, T entity, string alias = "");
-        Task<T> Update(int id, T entity, Dictionary<string, object> dict, string alias = "");
-        Task<T> Delete(int id, string alias = "");
+        Task<T> Create(T entity, string alias = "", bool sendObjFirebase = true, List<string> includeExpressions = null);
+        Task<T> Update(int id, T entity, string alias = "", bool sendObjFirebase = true, List<string> includeExpressions = null);
+        Task<T> Update(int id, T entity, Dictionary<string, object> dict, string alias = "", bool sendObjFirebase = true, List<string> includeExpressions = null);
+        Task<T> Delete(int id, string alias = "", bool sendObjFirebase = true);
     }
 }
