@@ -17,21 +17,27 @@ using System.Text.Json;
 
 namespace SER.Graphql.Reflection.NetCore.Generic
 {
-    public class MyFieldResolver<TUser, TRole, TUserRole> : IFieldResolver
+    public interface ISERFieldResolver<TUser, TRole, TUserRole> : IFieldResolver 
         where TUser : class
         where TRole : class
         where TUserRole : class
     {
-        private TableMetadata _tableMetadata;
+
+    }
+
+    public class MyFieldResolver<TUser, TRole, TUserRole> : ISERFieldResolver<TUser, TRole, TUserRole>
+        where TUser : class
+        where TRole : class
+        where TUserRole : class
+    {
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly FillDataExtensions _fillDataExtensions;
         private readonly ILogger _logger;
 
-        public MyFieldResolver(TableMetadata tableMetadata,
+        public MyFieldResolver(
             FillDataExtensions fillDataExtensions,
             IHttpContextAccessor httpContextAccessor)
         {
-            _tableMetadata = tableMetadata;
             _httpContextAccessor = httpContextAccessor;
             _fillDataExtensions = fillDataExtensions;
             _logger = _httpContextAccessor.HttpContext.RequestServices.GetService<ILogger<MyFieldResolver<TUser, TRole, TUserRole>>>();
@@ -39,15 +45,23 @@ namespace SER.Graphql.Reflection.NetCore.Generic
 
         public object Resolve(IResolveFieldContext context)
         {
-            var type = _tableMetadata.Type;
+            Type type = context.FieldDefinition.ResolvedType.GetType();
+            if (context.FieldAst.Name.Contains("_list"))
+                type = ((dynamic)context.FieldDefinition.ResolvedType).ResolvedType.GetType();
+
+            if(type.GenericTypeArguments.Length > 0)
+                type = type.GetGenericArguments()[0];
+
             Type graphRepositoryType = typeof(IGraphRepository<>).MakeGenericType(new Type[] { type });
+
             dynamic service = _httpContextAccessor.HttpContext.RequestServices.GetService(graphRepositoryType);
             var alias = string.IsNullOrEmpty(context.FieldAst.Alias) ? context.FieldAst.Name : context.FieldAst.Alias;
             var whereArgs = new StringBuilder();
             var args = new List<object>();
             var includes = new List<string>();
 
-            //Console.WriteLine($" ----------------------- alias {alias} Name {context.FieldAst.Name}");
+            //Console.WriteLine($" ----------------------- alias {alias} Name {context.FieldAst.Name} type {type}");
+
             try
             {
                 //var listFieldType = ((dynamic)context.FieldDefinition.ResolvedType).ResolvedType.Fields;
@@ -56,7 +70,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                 {
                     GraphUtils.DetectChild<TUser, TRole, TUserRole>(context.FieldAst.SelectionSet.Selections, includes,
                         ((dynamic)context.FieldDefinition.ResolvedType).ResolvedType, args, whereArgs,
-                        arguments: context.Arguments, mainType: _tableMetadata.Type);
+                        arguments: context.Arguments, mainType: type);
                     Console.WriteLine($"whereArgs list: {whereArgs} args {string.Join(", ", args)}");
 
                     return service
@@ -70,7 +84,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                 {
                     GraphUtils.DetectChild<TUser, TRole, TUserRole>(context.FieldAst.SelectionSet.Selections, includes,
                         context.FieldDefinition.ResolvedType, args, whereArgs,
-                        arguments: context.Arguments, mainType: _tableMetadata.Type);
+                        arguments: context.Arguments, mainType: type);
                     Console.WriteLine($"whereArgs count: {whereArgs}");
 
                     return service.GetCountQuery(whereArgs: whereArgs.ToString(),
@@ -80,7 +94,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                 {
                     GraphUtils.DetectChild<TUser, TRole, TUserRole>(context.FieldAst.SelectionSet.Selections, includes,
                         context.FieldDefinition.ResolvedType, args, whereArgs,
-                        arguments: context.Arguments, mainType: _tableMetadata.Type);
+                        arguments: context.Arguments, mainType: type);
                     string param = "";
                     Console.WriteLine($"whereArgs sum: {whereArgs}");
                     if (context.FieldAst.SelectionSet.Selections != null)
@@ -107,7 +121,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                     var id = context.GetArgument<dynamic>("id");
                     GraphUtils.DetectChild<TUser, TRole, TUserRole>(context.FieldAst.SelectionSet.Selections, includes,
                         context.FieldDefinition.ResolvedType, args, whereArgs,
-                        arguments: context.Arguments, mainType: _tableMetadata.Type);
+                        arguments: context.Arguments, mainType: type);
                     Console.WriteLine($"whereArgs single obj: {whereArgs}");
 
                     var dbEntity = service

@@ -64,8 +64,7 @@ namespace SER.Graphql.Reflection.NetCore.Custom
 
             services.AddScoped<FillDataExtensions>();
             services.AddScoped<ISchema, AppSchema<TUser, TRole, TUserRole>>();
-
-           
+            services.AddTransient<ISERFieldResolver<TUser, TRole, TUserRole>, MyFieldResolver<TUser, TRole, TUserRole>>();           
 
             services.AddLogging(builder => builder.AddConsole());
             services

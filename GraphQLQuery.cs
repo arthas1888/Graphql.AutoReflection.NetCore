@@ -20,18 +20,21 @@ namespace SER.Graphql.Reflection.NetCore.Generic
         where TRole : class
         where TUserRole : class
     {
-        private IDatabaseMetadata _dbMetadata;
-        private ITableNameLookup _tableNameLookup;
+        private readonly IDatabaseMetadata _dbMetadata;
+        private readonly ITableNameLookup _tableNameLookup;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly FillDataExtensions _fillDataExtensions;
         private readonly IDataLoaderContextAccessor _accessor;
+        private readonly ISERFieldResolver<TUser, TRole, TUserRole> _fieldResolver;
         private readonly IOptionsMonitor<SERGraphQlOptions> _optionsDelegate;
+
         public GraphQLQuery(
             IDatabaseMetadata dbMetadata,
             ITableNameLookup tableNameLookup,
             IHttpContextAccessor httpContextAccessor,
             FillDataExtensions fillDataExtensions,
             IDataLoaderContextAccessor accessor,
+            ISERFieldResolver<TUser, TRole, TUserRole> fieldResolver,
             IOptionsMonitor<SERGraphQlOptions> optionsDelegate
             )
         {
@@ -41,6 +44,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             _fillDataExtensions = fillDataExtensions;
             _accessor = accessor;
             _optionsDelegate = optionsDelegate;
+            _fieldResolver = fieldResolver;
 
             Name = "Query";
             var tables = _dbMetadata.GetTableMetadatas();
@@ -82,7 +86,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                     Name = friendlyTableName,
                     Type = tableType.GetType(),
                     ResolvedType = tableType,
-                    Resolver = new MyFieldResolver<TUser, TRole, TUserRole>(metaTable, _fillDataExtensions, _httpContextAccessor),
+                    Resolver = _fieldResolver, // new MyFieldResolver<TUser, TRole, TUserRole>(_fillDataExtensions, _httpContextAccessor),
                     Arguments = new QueryArguments(tableType.TableArgs)
                 });
 
@@ -95,7 +99,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                     Name = $"{friendlyTableName}_list",
                     Type = listType.GetType(),
                     ResolvedType = listType,
-                    Resolver = new MyFieldResolver<TUser, TRole, TUserRole>(metaTable, _fillDataExtensions, _httpContextAccessor),
+                    Resolver = _fieldResolver, 
                     Arguments = new QueryArguments(tableType.TableArgs)
                 });
 
@@ -104,7 +108,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                     Name = $"{friendlyTableName}_count",
                     Type = countTableType.GetType(),
                     ResolvedType = countTableType,
-                    Resolver = new MyFieldResolver<TUser, TRole, TUserRole>(metaTable, _fillDataExtensions, _httpContextAccessor),
+                    Resolver = _fieldResolver, 
                     Arguments = new QueryArguments(countTableType.TableArgs)
                 });
 
@@ -113,7 +117,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                     Name = $"{friendlyTableName}_sum",
                     Type = ttype,
                     ResolvedType = sumTableType,
-                    Resolver = new MyFieldResolver<TUser, TRole, TUserRole>(metaTable, _fillDataExtensions, _httpContextAccessor),
+                    Resolver = _fieldResolver, 
                     Arguments = new QueryArguments(sumTableType.TableArgs)
                 });
             }

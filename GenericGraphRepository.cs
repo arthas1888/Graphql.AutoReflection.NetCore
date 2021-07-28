@@ -104,15 +104,16 @@ namespace SER.Graphql.Reflection.NetCore
         }
 
         public async Task<IEnumerable<T>> GetAllAsync(string alias, List<string> includeExpressions = null,
-            string orderBy = "", string whereArgs = "", int? take = null, int? offset = null, params object[] args)
+            string orderBy = "", string whereArgs = "", int? take = null, int? offset = null, Dictionary<string, object> customfilters = null, params object[] args)
         {
             return await GetQuery(alias, includeExpressions: includeExpressions, orderBy: orderBy,
-                first: take, offset: offset, whereArgs: whereArgs, args: args)
+                first: take, offset: offset, whereArgs: whereArgs, customfilters: customfilters, args: args)
                 .AsNoTracking().ToListAsync();
         }
 
         public IQueryable<T> GetQuery(string alias, List<string> includeExpressions = null,
-            string orderBy = "", string whereArgs = "", int? first = null, int? offset = null, params object[] args)
+            string orderBy = "", string whereArgs = "", int? first = null, int? offset = null, Dictionary<string, object> customfilters = null,
+            params object[] args)
         {
             IQueryable<T> query = GetModel;
 
@@ -125,7 +126,10 @@ namespace SER.Graphql.Reflection.NetCore
                 query = query.Where(whereArgs, args);
 
             if (_optionsDelegate.CurrentValue.EnableCustomFilter)
-                query = FilterQueryByCompany(query, out _);
+                query = FilterQueryByCustomFilter(query, out _);
+
+            if (customfilters != null)
+                query = FilterWithCustomParams(query, customfilters);
 
             if (!string.IsNullOrEmpty(orderBy))
                 query = query.OrderBy(orderBy);
@@ -158,8 +162,32 @@ namespace SER.Graphql.Reflection.NetCore
             return query;
         }
 
+        private IQueryable<T> FilterWithCustomParams(IQueryable<T> query, Dictionary<string, object> customfilters)
+        {
+            var index = 0;
+            foreach (var filter in customfilters)
+            {
+                if (filter.Value.GetType().IsArray)
+                {
+                    foreach (var val in filter.Value as IEnumerable)
+                    {
+                        query = query.Where($"{filter.Key} = @{index}", val);
+                        index++;
+                    }
+                }
+                else
+                {
+                    query = query.Where($"{filter.Key} = @{index}", filter.Value);
+                    index++;
+                }
+                //var expToFilter = $"@0.Contains(string(object({filter.Key})))";
+
+            }
+            return query;
+        }
+
         public int GetCountQuery(List<string> includeExpressions = null,
-           string whereArgs = "", params object[] args)
+           string whereArgs = "", Dictionary<string, object> customfilters = null, params object[] args)
         {
             IQueryable<T> query = GetModel;
 
@@ -171,13 +199,16 @@ namespace SER.Graphql.Reflection.NetCore
             if (!string.IsNullOrEmpty(whereArgs) && args.Length > 0)
                 query = query.Where(whereArgs, args);
 
+            if (customfilters != null)
+                query = FilterWithCustomParams(query, customfilters);
+
             if (_optionsDelegate.CurrentValue.EnableCustomFilter)
-                query = FilterQueryByCompany(query, out _);
+                query = FilterQueryByCustomFilter(query, out _);
             return query.Count();
         }
 
         public SumObjectResponse<T> GetSumQuery(string param, List<string> includeExpressions = null,
-           string whereArgs = "", params object[] args)
+           string whereArgs = "", Dictionary<string, object> customfilters = null, params object[] args)
         {
             IQueryable<T> query = GetModel;
 
@@ -189,8 +220,11 @@ namespace SER.Graphql.Reflection.NetCore
             if (!string.IsNullOrEmpty(whereArgs) && args.Length > 0)
                 query = query.Where(whereArgs, args);
 
+            if (customfilters != null)
+                query = FilterWithCustomParams(query, customfilters);
+
             if (_optionsDelegate.CurrentValue.EnableCustomFilter)
-                query = FilterQueryByCompany(query, out _);
+                query = FilterQueryByCustomFilter(query, out _);
 
             return new SumObjectResponse<T>
             {
@@ -198,7 +232,7 @@ namespace SER.Graphql.Reflection.NetCore
             };
         }
 
-        private IQueryable<T> FilterQueryByCompany(IQueryable<T> query, out bool find, Type parentType = null, string columnName = "")
+        private IQueryable<T> FilterQueryByCustomFilter(IQueryable<T> query, out bool find, Type parentType = null, string columnName = "")
         {
             string nameField = _optionsDelegate.CurrentValue.NameCustomFilter;
             find = false;
@@ -261,7 +295,7 @@ namespace SER.Graphql.Reflection.NetCore
                 foreach (var dict in types.OrderByDescending(x => x.Key))
                 {
                     //Console.WriteLine($"---------------dict: {dict.Key}");
-                    query = FilterQueryByCompany(query, out bool finded, dict.Value, $"{dict.Key}.");
+                    query = FilterQueryByCustomFilter(query, out bool finded, dict.Value, $"{dict.Key}.");
                     if (finded) break;
                 }
             }
@@ -310,7 +344,7 @@ namespace SER.Graphql.Reflection.NetCore
             query = query.Where(whereArgs.ToString(), args.ToArray());
 
             if (_optionsDelegate.CurrentValue.EnableCustomFilter)
-                query = FilterQueryByCompany(query, out _);
+                query = FilterQueryByCustomFilter(query, out _);
 
             if (!string.IsNullOrEmpty(orderBy))
                 query = query.OrderBy(orderBy);
@@ -323,11 +357,11 @@ namespace SER.Graphql.Reflection.NetCore
 
 
         public async Task<T> GetByIdAsync(string alias, int id, List<string> includeExpressions = null,
-          string whereArgs = "", params object[] args)
+          string whereArgs = "", Dictionary<string, object> customfilters = null, params object[] args)
         {
             if (id == 0) return null;
             var entity = await GetQuery(alias, includeExpressions: includeExpressions,
-                first: 1, whereArgs: whereArgs, args: args)
+                first: 1, whereArgs: whereArgs, customfilters: customfilters, args: args)
                 .AsNoTracking().FirstOrDefaultAsync();
 
             //var entity = await GetModel.FindAsync(id);
@@ -336,11 +370,11 @@ namespace SER.Graphql.Reflection.NetCore
         }
 
         public async Task<T> GetByIdAsync(string alias, string id, List<string> includeExpressions = null,
-         string whereArgs = "", params object[] args)
+         string whereArgs = "", Dictionary<string, object> customfilters = null, params object[] args)
         {
             if (string.IsNullOrEmpty(id)) return null;
             var entity = await GetQuery(alias, includeExpressions: includeExpressions,
-                first: 1, whereArgs: whereArgs, args: args)
+                first: 1, whereArgs: whereArgs, customfilters: customfilters, args: args)
                 .AsNoTracking().FirstOrDefaultAsync();
             if (entity == null) return null;
             return entity;
