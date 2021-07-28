@@ -83,7 +83,7 @@ namespace SER.Graphql.Reflection.NetCore
         public string GetCompanyIdUser()
         {
             return _httpContextAccessor.HttpContext.User.Claims.FirstOrDefault(x =>
-                x.Type == GraphClaimTypes.CompanyId)?.Value;
+                x.Type == _optionsDelegate.CurrentValue.NameClaimCustomFilter)?.Value;
         }
 
         public string GetCurrentUser()
@@ -260,7 +260,7 @@ namespace SER.Graphql.Reflection.NetCore
             {
                 foreach (var dict in types.OrderByDescending(x => x.Key))
                 {
-                    //_logger.LogWarning($"---------------dict: {dict.Key}");
+                    //Console.WriteLine($"---------------dict: {dict.Key}");
                     query = FilterQueryByCompany(query, out bool finded, dict.Value, $"{dict.Key}.");
                     if (finded) break;
                 }
@@ -375,7 +375,7 @@ namespace SER.Graphql.Reflection.NetCore
                     }, id: GetKey(entity), commit: true);
                 }
 
-                includeExpressions?.ForEach(x => _context.Entry(obj).Reference(x).Load());
+                includeExpressions?.ForEach(x => _context.Entry(obj.Entity).Reference(x).Load());
 
                 if (sendObjFirebase) SendStatus(GraphGrpcStatus.CREATE, GetKey(entity));
                 if (!string.IsNullOrEmpty(GetCurrentUser()))

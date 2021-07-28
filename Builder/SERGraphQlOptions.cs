@@ -26,6 +26,7 @@ namespace SER.Graphql.Reflection.NetCore.Builder
         public string TokenIssuer { get; set; }
         public bool EnableCustomFilter { get; set; }
         public string NameCustomFilter { get; set; }
+        public string NameClaimCustomFilter { get; set; }
         public bool EnableStatusMutation { get; set; }
         public bool EnableAudit { get; set; }
 
