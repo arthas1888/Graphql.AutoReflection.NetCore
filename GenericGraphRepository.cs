@@ -589,9 +589,17 @@ namespace SER.Graphql.Reflection.NetCore
                     var props = objectElement.EnumerateObject();
                     var propId = props.FirstOrDefault(x => x.Name == "id");
 
+                    //Console.WriteLine($"  ***************** propId {propId} { propId.Value.GetInt32()}");
+
                     Func<M, bool> isEqual = (a) => propId.Value.GetInt32() == int.Parse(keyProperty.First(x => x.Name == "id").GetValue(a).ToString());
                     var obj = dataDb.FirstOrDefault(isEqual);
                     var entity = entities.FirstOrDefault(isEqual);
+
+                    if (obj == null)
+                    {
+                        iQueryable.Add(entity);
+                        continue;
+                    }                   
 
                     while (props.MoveNext())
                     {
