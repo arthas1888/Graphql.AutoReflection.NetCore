@@ -169,19 +169,12 @@ namespace SER.Graphql.Reflection.NetCore
             {
                 if (filter.Value.GetType().IsArray)
                 {
-                    foreach (var val in filter.Value as IEnumerable)
-                    {
-                        query = query.Where($"{filter.Key} = @{index}", val);
-                        index++;
-                    }
+                    var expToFilter = $"@{index}.Contains(string(object({filter.Key})))";
+                    query = query.Where(expToFilter, filter.Value);
                 }
                 else
-                {
                     query = query.Where($"{filter.Key} = @{index}", filter.Value);
-                    index++;
-                }
-                //var expToFilter = $"@0.Contains(string(object({filter.Key})))";
-
+                index++;
             }
             return query;
         }
@@ -599,7 +592,7 @@ namespace SER.Graphql.Reflection.NetCore
                     {
                         iQueryable.Add(entity);
                         continue;
-                    }                   
+                    }
 
                     while (props.MoveNext())
                     {
