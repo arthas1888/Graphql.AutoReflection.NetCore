@@ -80,6 +80,12 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                       (ids) => service.GetItemsByIds(ids, context, param, isString: true));
                     res = loader.LoadAsync(@string);
                 }
+                else if (context.Source is IBaseModel && valueField is Guid @guid)
+                {
+                    var loader = _accessor.Context.GetOrAddCollectionBatchLoader<string, T>($"GetItemsByIds_{typeof(T).Name}",
+                      (ids) => service.GetItemsByIds(ids, context, param, isString: true));
+                    res = loader.LoadAsync(@guid.ToString());
+                }
                 else if (context.Source is IdentityUser)
                 {
                     var loader = _accessor.Context.GetOrAddCollectionBatchLoader<string, T>($"GetItemsByIds_{typeof(T).Name}",

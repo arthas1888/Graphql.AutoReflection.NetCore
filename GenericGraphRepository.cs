@@ -314,7 +314,7 @@ namespace SER.Graphql.Reflection.NetCore
             // using var _db = new DbContext(optionsBuilder.Options);
             IQueryable<T> query = _dbContext.Set<T>();
 
-            List<string> includeExpressions = new List<string>();
+            List<string> includeExpressions = new();
             GraphUtils.DetectChild<TUser, TRole, TUserRole>(context.FieldAst.SelectionSet.Selections, includeExpressions,
                    ((dynamic)context.FieldDefinition.ResolvedType).ResolvedType, args, whereArgs,
                    arguments: context.Arguments, mainType: typeof(T));
@@ -322,7 +322,7 @@ namespace SER.Graphql.Reflection.NetCore
             if (whereArgs.Length > 0)
                 whereArgs.Append(" and ");
 
-            if (isString) whereArgs.Append($"@{args.Count}.Contains({param})");
+            if (isString) whereArgs.Append($"@{args.Count}.Contains(string(object({param})))");
             else
                 whereArgs.Append($"@{args.Count}.Contains(int({param}))");
             args.Add(ids);
