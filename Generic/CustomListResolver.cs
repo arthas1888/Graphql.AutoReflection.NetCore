@@ -82,9 +82,9 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                 }
                 else if (context.Source is IBaseModel && valueField is Guid @guid)
                 {
-                    var loader = _accessor.Context.GetOrAddCollectionBatchLoader<string, T>($"GetItemsByIds_{typeof(T).Name}",
+                    var loader = _accessor.Context.GetOrAddCollectionBatchLoader<Guid, T>($"GetItemsByIds_{typeof(T).Name}",
                       (ids) => service.GetItemsByIds(ids, context, param, isString: true));
-                    res = loader.LoadAsync(@guid.ToString());
+                    res = loader.LoadAsync(@guid);
                 }
                 else if (context.Source is IdentityUser)
                 {
@@ -102,7 +102,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                 {
                     var loader = _accessor.Context.GetOrAddCollectionBatchLoader<string, T>($"GetItemsByIds_{typeof(T).Name}",
                         (ids) => service.GetItemsByIds(ids, context, param, isString: true));
-                    res = loader.LoadAsync((string)valueField);
+                    res = loader.LoadAsync(valueField.ToString());
                 }
 
                 if (first.HasValue && first.Value > 0)

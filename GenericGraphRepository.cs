@@ -325,7 +325,16 @@ namespace SER.Graphql.Reflection.NetCore
             if (isString) whereArgs.Append($"@{args.Count}.Contains(string(object({param})))");
             else
                 whereArgs.Append($"@{args.Count}.Contains(int({param}))");
-            args.Add(ids);
+
+            if (ids.Any() && ids.First().GetType() == typeof(Guid))
+            {
+                args.Add(ids.Select(x => x.ToString()));
+            }
+            else
+            {
+                args.Add(ids);
+            }
+
 
             if (includeExpressions != null && includeExpressions.Count > 0)
             {
@@ -342,6 +351,7 @@ namespace SER.Graphql.Reflection.NetCore
             if (!string.IsNullOrEmpty(orderBy))
                 query = query.OrderBy(orderBy);
 
+            await query.AsNoTracking().ToListAsync();
             var items = await query.AsNoTracking().ToListAsync();
             var pi = typeof(T).GetProperty(param);
             //if (typeof(Tkey) == typeof(int))
@@ -366,6 +376,17 @@ namespace SER.Graphql.Reflection.NetCore
          string whereArgs = "", Dictionary<string, object> customfilters = null, params object[] args)
         {
             if (string.IsNullOrEmpty(id)) return null;
+            var entity = await GetQuery(alias, includeExpressions: includeExpressions,
+                first: 1, whereArgs: whereArgs, customfilters: customfilters, args: args)
+                .AsNoTracking().FirstOrDefaultAsync();
+            if (entity == null) return null;
+            return entity;
+        }
+
+        public async Task<T> GetByIdAsync(string alias, Guid? id, List<string> includeExpressions = null,
+         string whereArgs = "", Dictionary<string, object> customfilters = null, params object[] args)
+        {
+            if (id == null) return null;
             var entity = await GetQuery(alias, includeExpressions: includeExpressions,
                 first: 1, whereArgs: whereArgs, customfilters: customfilters, args: args)
                 .AsNoTracking().FirstOrDefaultAsync();
