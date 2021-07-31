@@ -32,9 +32,25 @@ namespace SER.Graphql.Reflection.NetCore.Generic
 
             Type graphRepositoryType = typeof(IGraphRepository<>).MakeGenericType(new Type[] { _type });
             dynamic service = _httpContextAccessor.HttpContext.RequestServices.GetService(graphRepositoryType);
-            var id = context.GetArgument<int?>("id");
+            dynamic id =  null;
             var sendObjFirebase = context.GetArgument<bool?>("sendObjFirebase") ?? true;
-            var deleteId = context.GetArgument<int?>($"{_type.Name.ToLower().ToSnakeCase()}Id");
+            dynamic deleteId = null;
+            if (context.HasArgument("id"))
+            {
+                id = context.GetArgument<object>("id");
+                if (id is int) id = (int)id;
+                else if (id is int) id = id.ToString();
+                else if (id is Guid) id = (Guid)deleteId;
+            }
+            if (context.HasArgument($"{_type.Name.ToLower().ToSnakeCase()}Id"))
+            {
+                deleteId = context.GetArgument<object>($"{_type.Name.ToLower().ToSnakeCase()}Id");
+                if (deleteId is int) deleteId = (int)deleteId;
+                else if (deleteId is int) deleteId = deleteId.ToString();
+                else if (deleteId is Guid) deleteId = (Guid)deleteId;
+            }
+
+
             var alias = string.IsNullOrEmpty(context.FieldAst.Alias) ? context.FieldAst.Name : context.FieldAst.Alias;
             var mainType = _type;
 
@@ -56,7 +72,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                     if (fieldType != null)
                     {
                         // detect if field is object
-                        if (fieldType.ResolvedType.GetType().IsGenericType && fieldType.ResolvedType is not ListGraphType 
+                        if (fieldType.ResolvedType.GetType().IsGenericType && fieldType.ResolvedType is not ListGraphType
                             && fieldType.ResolvedType.GetType().GetGenericTypeDefinition() == typeof(ObjectGraphType<>))
                         {
                             includes.Add(model);
@@ -66,15 +82,15 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             }
 
 
-            if (id.HasValue)
+            if (id != null)
             {
                 var argName = context.FieldAst.Arguments.FirstOrDefault(x => x.Name == _type.Name.ToLower().ToSnakeCase());
                 object dbEntity = null;
                 var variable = context.Variables.FirstOrDefault(x => x.Name == (string)argName.Value.Value);
                 if (variable != null && variable.Value.GetType() == typeof(Dictionary<string, object>))
-                    dbEntity = service.Update(id.Value, entity, (Dictionary<string, object>)variable.Value, alias, sendObjFirebase, includes);
+                    dbEntity = service.Update(id, entity, (Dictionary<string, object>)variable.Value, alias, sendObjFirebase, includes);
                 else
-                    dbEntity = service.Update(id.Value, entity, (Dictionary<string, object>)argName.Value.Value, alias, sendObjFirebase, includes);
+                    dbEntity = service.Update(id, entity, (Dictionary<string, object>)argName.Value.Value, alias, sendObjFirebase, includes);
 
                 if (dbEntity == null)
                 {
@@ -84,9 +100,9 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                 return dbEntity;
             }
 
-            if (deleteId.HasValue)
+            if (deleteId != null)
             {
-                var dbEntity = service.Delete(deleteId.Value, alias, sendObjFirebase);
+                var dbEntity = service.Delete(deleteId, alias, sendObjFirebase);
                 if (dbEntity == null)
                 {
                     GetError(context);

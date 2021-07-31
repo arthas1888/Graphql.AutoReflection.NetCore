@@ -454,14 +454,35 @@ namespace SER.Graphql.Reflection.NetCore
             return entity.GetType().GetProperty(keyName).GetValue(entity, null).ToString();
         }
 
-        public Task<T> Update(int id, T entity, string alias = "", bool sendObjFirebase = true, List<string> includeExpressions = null)
+        public Task<T> Update(object id, T entity, string alias = "", bool sendObjFirebase = true, List<string> includeExpressions = null)
         {
             throw new NotImplementedException();
         }
 
-        public async Task<T> Update(int id, T entity, Dictionary<string, object> dict, string alias = "", bool sendObjFirebase = true, List<string> includeExpressions = null)
+        public async Task<T> Update(object id, T entity, Dictionary<string, object> dict, string alias = "", bool sendObjFirebase = true, List<string> includeExpressions = null)
         {
-            var obj = GetModel.Find(id);
+            //var obj = GetModel.Find(id);
+            T obj = null;
+            if (id is string)
+            {
+                if (Guid.TryParse(id.ToString(), out Guid @guid))
+                {
+                    var keyName = _context.Model.FindEntityType(typeof(T)).FindPrimaryKey()?.Properties
+                        .Select(x => x.Name).FirstOrDefault();
+                    var pi = typeof(T).GetProperty(keyName);
+                    var expToEvaluate = EqualPredicate<T>(typeof(T), keyName, @guid, pi.PropertyType);
+                    obj = GetModel.FirstOrDefault(expToEvaluate);
+                }
+                else
+                {
+                    obj = GetModel.Find(id);
+                }
+            }
+            else
+            {
+                obj = GetModel.Find(id);
+            }
+
             if (obj != null)
             {
                 nameModel = $"update_{nameModel}";
@@ -543,7 +564,7 @@ namespace SER.Graphql.Reflection.NetCore
             return obj;
         }
 
-        private void UpdateList(Type type, int parentId, dynamic values, dynamic entities)
+        private void UpdateList(Type type, object parentId, dynamic values, dynamic entities)
         {
             try
             {
@@ -558,10 +579,12 @@ namespace SER.Graphql.Reflection.NetCore
             }
         }
 
-        public void UpdateListAsync<M>(int parentId, ICollection<object> values, List<M> entities) where M : class
+        public void UpdateListAsync<M>(object parentId, ICollection<object> values, List<M> entities) where M : class
         {
             var iQueryable = _context.Set<M>();
             var keyProperty = typeof(M).GetProperties();
+            var keyName = _context.Model.FindEntityType(typeof(M)).FindPrimaryKey()?.Properties
+                        .Select(x => x.Name).FirstOrDefault();
             var paramFK = "";
             Type valueType = null;
 
@@ -588,7 +611,15 @@ namespace SER.Graphql.Reflection.NetCore
             if (!string.IsNullOrEmpty(paramFK))
             {
                 valueType = typeof(M).GetProperty(paramFK).PropertyType;
-                var expToEvaluate = EqualPredicate<M>(typeof(M), paramFK, parentId, valueType);
+                Expression<Func<M, bool>> expToEvaluate = null;
+                if (Guid.TryParse(parentId.ToString(), out Guid @guid))
+                {
+                    expToEvaluate = EqualPredicate<M>(typeof(M), paramFK, @guid, valueType);
+                }
+                else
+                {
+                    expToEvaluate = EqualPredicate<M>(typeof(M), paramFK, parentId, valueType);
+                }
                 var dataDb = iQueryable.Where(expToEvaluate).ToList();
 
 
@@ -601,11 +632,11 @@ namespace SER.Graphql.Reflection.NetCore
                 {
                     var objectElement = array.Current;
                     var props = objectElement.EnumerateObject();
-                    var propId = props.FirstOrDefault(x => x.Name == "id");
+                    var propId = props.FirstOrDefault(x => x.Name == keyName);
 
                     //Console.WriteLine($"  ***************** propId {propId} { propId.Value.GetInt32()}");
 
-                    Func<M, bool> isEqual = (a) => propId.Value.GetInt32() == int.Parse(keyProperty.First(x => x.Name == "id").GetValue(a).ToString());
+                    Func<M, bool> isEqual = (a) => propId.Value.GetInt32() == int.Parse(keyProperty.First(x => x.Name == keyName).GetValue(a).ToString());
                     var obj = dataDb.FirstOrDefault(isEqual);
                     var entity = entities.FirstOrDefault(isEqual);
 
@@ -649,7 +680,7 @@ namespace SER.Graphql.Reflection.NetCore
             return JsonDocument.Parse(response, documentOptions).RootElement;
         }
 
-        private void DeleteRelationsM2M(Type type, int parentId)
+        private void DeleteRelationsM2M(Type type, object parentId)
         {
             try
             {
@@ -660,11 +691,11 @@ namespace SER.Graphql.Reflection.NetCore
             }
             catch (Exception e)
             {
-                _logger.LogError($"ERROR {e.ToString()} type {nameof(type)} parentId {parentId}");
+                _logger.LogError($"ERROR {e} type {nameof(type)} parentId {parentId}");
             }
         }
 
-        public void DeleteRelations<M>(int parentId) where M : class
+        public void DeleteRelations<M>(object parentId) where M : class
         {
             var iQueryable = _context.Set<M>();
             var keyProperty = typeof(M).GetProperties();
@@ -700,7 +731,15 @@ namespace SER.Graphql.Reflection.NetCore
             if (!string.IsNullOrEmpty(paramFK))
             {
                 valueType = typeof(M).GetProperty(paramFK).PropertyType;
-                var expToEvaluate = EqualPredicate<M>(typeof(M), paramFK, parentId, valueType);
+                Expression<Func<M, bool>> expToEvaluate = null;
+                if (Guid.TryParse(parentId.ToString(), out Guid @guid))
+                {
+                    expToEvaluate = EqualPredicate<M>(typeof(M), paramFK, @guid, valueType);
+                }
+                else
+                {
+                    expToEvaluate = EqualPredicate<M>(typeof(M), paramFK, parentId, valueType);
+                }
                 iQueryable.RemoveRange(iQueryable.Where(expToEvaluate));
                 // _context.SaveChanges();
             }
@@ -723,9 +762,29 @@ namespace SER.Graphql.Reflection.NetCore
             return Expression.Lambda<Func<M, bool>>(exp, parameter);
         }
 
-        public async Task<T> Delete(int id, string alias = "", bool sendObjFirebase = true)
+        public async Task<T> Delete(object id, string alias = "", bool sendObjFirebase = true)
         {
-            var obj = GetModel.Find(id);
+            T obj = null;
+            if (id is string)
+            {
+                if (Guid.TryParse(id.ToString(), out Guid @guid))
+                {
+                    var keyName = _context.Model.FindEntityType(typeof(T)).FindPrimaryKey()?.Properties
+                        .Select(x => x.Name).FirstOrDefault();
+                    var pi = typeof(T).GetProperty(keyName);
+                    var expToEvaluate = EqualPredicate<T>(typeof(T), keyName, @guid, pi.PropertyType);
+                    obj = GetModel.FirstOrDefault(expToEvaluate);
+                }
+                else
+                {
+                    obj = GetModel.Find(id);
+                }
+            }
+            else
+            {
+                obj = GetModel.Find(id);
+            }
+
             if (obj != null)
             {
                 nameModel = $"delete_{nameModel}";
