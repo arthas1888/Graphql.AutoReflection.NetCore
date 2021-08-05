@@ -17,7 +17,7 @@ namespace SER.Graphql.Reflection.NetCore.CustomScalar
         }
 
         public override object ParseLiteral(IValue value) => value switch
-        {           
+        {
             StringValue s => ParseValue(s.Value),
             IntValue intValue => intValue.Value,
             LongValue longValue => checked((int)longValue.Value),
@@ -26,12 +26,20 @@ namespace SER.Graphql.Reflection.NetCore.CustomScalar
             _ => ThrowLiteralConversionError(value)
         };
 
-        public override bool CanParseLiteral(IValue value) 
+        public override bool CanParseLiteral(IValue value)
         {
-           try
+            try
             {
                 _ = ParseLiteral(value);
-                return true;
+                return (value) switch
+                {
+                    IntValue _ => true,
+                    StringValue str => int.TryParse(str.Value, out int @res),
+                    LongValue longValue => int.MinValue <= longValue.Value && longValue.Value <= int.MaxValue,
+                    BigIntValue bigIntValue => int.MinValue <= bigIntValue.Value && bigIntValue.Value <= int.MaxValue,
+                    NullValue _ => true,
+                    _ => false
+                };
             }
             catch
             {

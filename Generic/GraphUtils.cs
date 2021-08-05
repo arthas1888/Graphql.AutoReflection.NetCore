@@ -481,6 +481,9 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                 if (type == typeof(int))
                     return typeof(MyIntGraphType);
 
+                if (type == typeof(bool))
+                    return typeof(MyBooleanGraphType);
+
                 return type.GetGraphTypeFromType(true);
             }
             catch (Exception)
