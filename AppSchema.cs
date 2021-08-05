@@ -7,6 +7,7 @@ using NetTopologySuite.Geometries;
 using SER.Graphql.Reflection.NetCore.Utilities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using SER.Graphql.Reflection.NetCore.CustomScalar;
 
 namespace SER.Graphql.Reflection.NetCore
 {
@@ -24,10 +25,27 @@ namespace SER.Graphql.Reflection.NetCore
             ValueConverter.Register(typeof(string), typeof(Polygon), ParsePolygonString);
             ValueConverter.Register(typeof(string), typeof(MultiLineString), ParseMultiLineString);
             ValueConverter.Register(typeof(string), typeof(TimeSpan), TimeSpanConvert);
+            ValueConverter.Register(typeof(string), typeof(int), IntConvert);
 
             Query = services.GetRequiredService<GraphQLQuery<TUser, TRole, TUserRole>>();
             Mutation = services.GetRequiredService<AppMutation>();
             Subscription = services.GetRequiredService<AppSubscriptions>();
+
+            RegisterType(new MyBooleanGraphType());
+            RegisterType(new MyIntGraphType());
+        }
+
+        private object IntConvert(object value)
+        {
+            try
+            {
+                var input = (string)value;
+                return int.Parse(input);
+            }
+            catch
+            {
+                throw new FormatException($"Failed to parse int from input '{value}'. Input should be a string of int representation");
+            }
         }
 
         private object TimeSpanConvert(object value)

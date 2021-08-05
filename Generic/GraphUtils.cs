@@ -15,6 +15,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json;
 using System.Collections;
 using GraphQL.Execution;
+using SER.Graphql.Reflection.NetCore.CustomScalar;
 
 namespace SER.Graphql.Reflection.NetCore.Generic
 {
@@ -476,6 +477,9 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             {
                 if (type == typeof(DateTime))
                     return typeof(DateTimeGraphType);
+
+                if (type == typeof(int))
+                    return typeof(MyIntGraphType);
 
                 return type.GetGraphTypeFromType(true);
             }
