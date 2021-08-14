@@ -8,6 +8,7 @@ using Microsoft.Extensions.Options;
 using SER.Graphql.Reflection.NetCore.Builder;
 using SER.Models;
 using SER.Graphql.Reflection.NetCore.Models;
+using SER.Graphql.Reflection.NetCore.CustomScalar;
 
 namespace SER.Graphql.Reflection.NetCore
 {
@@ -123,18 +124,18 @@ namespace SER.Graphql.Reflection.NetCore
 
                 if (type == typeof(DateTime?) || type == typeof(DateTime))
                 {
-                    TableArgs.Add(new QueryArgument<DateTimeGraphType> { Name = $"{columnName}_gt" });
-                    TableArgs.Add(new QueryArgument<DateTimeGraphType> { Name = $"{columnName}_gte" });
-                    TableArgs.Add(new QueryArgument<DateTimeGraphType> { Name = $"{columnName}_lt" });
-                    TableArgs.Add(new QueryArgument<DateTimeGraphType> { Name = $"{columnName}_lte" });
+                    TableArgs.Add(new QueryArgument<MyDateTimeGraphType> { Name = $"{columnName}_gt" });
+                    TableArgs.Add(new QueryArgument<MyDateTimeGraphType> { Name = $"{columnName}_gte" });
+                    TableArgs.Add(new QueryArgument<MyDateTimeGraphType> { Name = $"{columnName}_lt" });
+                    TableArgs.Add(new QueryArgument<MyDateTimeGraphType> { Name = $"{columnName}_lte" });
                 }
                 else if (type == typeof(int?) || type == typeof(int) || type == typeof(decimal?) || type == typeof(decimal)
                     || type == typeof(double?) || type == typeof(double) || type == typeof(float?) || type == typeof(float))
                 {
-                    TableArgs.Add(new QueryArgument<IntGraphType> { Name = $"{columnName}_gt" });
-                    TableArgs.Add(new QueryArgument<IntGraphType> { Name = $"{columnName}_gte" });
-                    TableArgs.Add(new QueryArgument<IntGraphType> { Name = $"{columnName}_lt" });
-                    TableArgs.Add(new QueryArgument<IntGraphType> { Name = $"{columnName}_lte" });
+                    TableArgs.Add(new QueryArgument<MyIntGraphType> { Name = $"{columnName}_gt" });
+                    TableArgs.Add(new QueryArgument<MyIntGraphType> { Name = $"{columnName}_gte" });
+                    TableArgs.Add(new QueryArgument<MyIntGraphType> { Name = $"{columnName}_lt" });
+                    TableArgs.Add(new QueryArgument<MyIntGraphType> { Name = $"{columnName}_lte" });
                     TableArgs.Add(new QueryArgument<StringGraphType> { Name = $"{columnName}_iext" });
                     TableArgs.Add(new QueryArgument<StringGraphType> { Name = $"{columnName}_iext_or" });
                     TableArgs.Add(new QueryArgument<BooleanGraphType> { Name = $"{columnName}_isnull" });

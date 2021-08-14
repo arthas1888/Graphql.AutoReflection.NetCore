@@ -26,6 +26,7 @@ namespace SER.Graphql.Reflection.NetCore
             ValueConverter.Register(typeof(string), typeof(MultiLineString), ParseMultiLineString);
             ValueConverter.Register(typeof(string), typeof(TimeSpan), TimeSpanConvert);
             ValueConverter.Register(typeof(string), typeof(int), IntConvert);
+            ValueConverter.Register(typeof(string), typeof(DateTime), DatetimeConvert);
 
             Query = services.GetRequiredService<GraphQLQuery<TUser, TRole, TUserRole>>();
             Mutation = services.GetRequiredService<AppMutation>();
@@ -33,6 +34,7 @@ namespace SER.Graphql.Reflection.NetCore
 
             RegisterType(new MyBooleanGraphType());
             RegisterType(new MyIntGraphType());
+            RegisterType(new MyDateTimeGraphType());
         }
 
         private object IntConvert(object value)
@@ -45,6 +47,19 @@ namespace SER.Graphql.Reflection.NetCore
             catch
             {
                 throw new FormatException($"Failed to parse int from input '{value}'. Input should be a string of int representation");
+            }
+        }
+
+        private object DatetimeConvert(object value)
+        {
+            try
+            {
+                var input = (string)value;
+                return DateTime.Parse(input);
+            }
+            catch
+            {
+                throw new FormatException($"Failed to parse {nameof(DateTime)} from input '{value}'. Input should be a string of DateTime representation");
             }
         }
 

@@ -476,7 +476,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             try
             {
                 if (type == typeof(DateTime))
-                    return typeof(DateTimeGraphType);
+                    return typeof(MyDateTimeGraphType);
 
                 if (type == typeof(int))
                     return typeof(MyIntGraphType);
