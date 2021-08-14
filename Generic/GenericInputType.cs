@@ -102,17 +102,17 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             }
         }
 
-        private dynamic GetInternalInstances(ColumnMetadata columnMetadata)
+        private InputObjectGraphType GetInternalInstances(ColumnMetadata columnMetadata)
         {
             var metaTable = _dbMetadata.GetTableMetadatas().FirstOrDefault(x => x.Type.Name == columnMetadata.Type.Name);
 
             string key = $"{metaTable.Type.Name.ToLower().ToSnakeCase()}_first_internal_input";
-            dynamic objectGraphType = null;
+            InputObjectGraphType objectGraphType = null;
 
             if (!_tableNameLookup.ExistInputGraphType(key))
             {
-                var inherateListType = typeof(InputObjectGraphType<>).MakeGenericType(new Type[] { columnMetadata.Type });
-                objectGraphType = Activator.CreateInstance(inherateListType);
+                //var inherateListType = typeof(InputObjectGraphType<>).MakeGenericType(new Type[] { columnMetadata.Type });
+                objectGraphType = new InputObjectGraphType(); // Activator.CreateInstance(inherateListType);
                 objectGraphType.Name = key;
                 foreach (var tableColumn in metaTable.Columns)
                 {
@@ -130,8 +130,10 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             var metaTable = _dbMetadata.GetTableMetadatas().FirstOrDefault(x => x.Type.Name == columnMetadata.Type.Name);
 
             string key = $"{metaTable.Type.Name.ToLower().ToSnakeCase()}_list_input";
-            var objectGraphType = new InputObjectGraphType();
-            objectGraphType.Name = key;
+            var objectGraphType = new InputObjectGraphType
+            {
+                Name = key
+            };
             dynamic listGraphType = null;
 
             if (!_tableNameLookup.ExistInputListGraphType(key))
@@ -145,17 +147,18 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             return _tableNameLookup.GetOrInsertInputListGraphType(key, listGraphType);
         }
 
-        private dynamic GetSecondGraphType(ColumnMetadata columnMetadata, TableMetadata metaTable = null)
+        private InputObjectGraphType GetSecondGraphType(ColumnMetadata columnMetadata, TableMetadata metaTable = null)
         {
             string key = $"{columnMetadata.Type.Name}_internal_input";
-            dynamic objectGraphType = null;
+            InputObjectGraphType objectGraphType = null;
             if (metaTable == null)
                 metaTable = _dbMetadata.GetTableMetadatas().FirstOrDefault(x => x.Type.Name == columnMetadata.Type.Name);
             if (!_tableNameLookup.ExistInputGraphType(key))
             {
                 //Creacion de instancia
-                var inherateListType = typeof(InputObjectGraphType<>).MakeGenericType(new Type[] { columnMetadata.Type });
-                objectGraphType = Activator.CreateInstance(inherateListType);
+                //var inherateListType = typeof(InputObjectGraphType<>).MakeGenericType(new Type[] { columnMetadata.Type });
+                objectGraphType = new InputObjectGraphType();
+                //objectGraphType = Activator.CreateInstance(inherateListType);
                 objectGraphType.Name = key;
                 foreach (var tableColumn in metaTable.Columns)
                 {

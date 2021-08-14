@@ -586,6 +586,7 @@ namespace SER.Graphql.Reflection.NetCore
             var keyName = _context.Model.FindEntityType(typeof(M)).FindPrimaryKey()?.Properties
                         .Select(x => x.Name).FirstOrDefault();
             var paramFK = "";
+
             Type valueType = null;
 
             foreach (var prop in typeof(M).GetProperties())
