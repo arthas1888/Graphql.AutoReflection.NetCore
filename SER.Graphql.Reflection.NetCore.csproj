@@ -3,7 +3,7 @@
 	<PropertyGroup>
 		<TargetFramework>net5.0</TargetFramework>
 		<Company>SER Soluciones</Company>
-		<Version>0.21.0</Version>
+		<Version>0.21.1</Version>
 		<AssemblyName>SER.Graphql.Reflection.NetCore</AssemblyName>
 		<RootNamespace>SER.Graphql.Reflection.NetCore</RootNamespace>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
