@@ -262,13 +262,12 @@ namespace SER.Graphql.Reflection.NetCore
                     attrName = attr.Name;
                 }
 
-                if (attrName != "" && typeToEvaluate.GetProperties().SingleOrDefault(x => x.Name == attrName).GetCustomAttributes(true).Any(x => x.GetType() == typeof(RequiredAttribute)))
-                    if (typeof(IBaseModel).IsAssignableFrom(childType)
-                        || childType == typeof(TUser) || childType == typeof(TRole) || childType == typeof(TUserRole))
-                    {
-                        types.Add(propertyInfo.Name, childType);
-                    }
-
+                if (attrName != "" && (typeof(IBaseModel).IsAssignableFrom(childType)
+                        || childType == typeof(TUser) || childType == typeof(TRole) || childType == typeof(TUserRole)))
+                {
+                    types.Add(propertyInfo.Name, childType);
+                }
+                //Console.WriteLine($"---------------Name: {propertyInfo.Name.ToSnakeCase()} nameField {nameField} find {find}  childType {childType} ");
                 if (propertyInfo.Name.ToSnakeCase() == nameField)
                 {
                     find = true;
@@ -303,6 +302,7 @@ namespace SER.Graphql.Reflection.NetCore
             var whereArgs = new StringBuilder();
             var args = new List<object>();
             var orderBy = context.GetArgument<string>("orderBy");
+            var take = context.GetArgument<int?>("first");
 
             string SqlConnectionStr = _optionsDelegate.CurrentValue.ConnectionString;
             var optionsBuilder = new DbContextOptionsBuilder<TContext>();
@@ -313,6 +313,12 @@ namespace SER.Graphql.Reflection.NetCore
             using DbContext _dbContext = (DbContext)Activator.CreateInstance(typeof(TContext), new object[] { optionsBuilder.Options });
             // using var _db = new DbContext(optionsBuilder.Options);
             IQueryable<T> query = _dbContext.Set<T>();
+
+            foreach (var arg in context.Arguments)
+            {
+                if (arg.Value.Value != null)
+                    _logger.LogInformation($" ---------------------- \nKey {arg.Key} Value {arg.Value.Value}");
+            }
 
             List<string> includeExpressions = new();
             GraphUtils.DetectChild<TUser, TRole, TUserRole>(context.FieldAst.SelectionSet.Selections, includeExpressions,
@@ -325,6 +331,7 @@ namespace SER.Graphql.Reflection.NetCore
             if (isString) whereArgs.Append($"@{args.Count}.Contains(string(object({param})))");
             else
                 whereArgs.Append($"@{args.Count}.Contains(int({param}))");
+
 
             if (ids.Any() && ids.First().GetType() == typeof(Guid))
             {
@@ -350,6 +357,9 @@ namespace SER.Graphql.Reflection.NetCore
 
             if (!string.IsNullOrEmpty(orderBy))
                 query = query.OrderBy(orderBy);
+
+            if (take != null)
+                query = query.Take(take.Value);
 
             await query.AsNoTracking().ToListAsync();
             var items = await query.AsNoTracking().ToListAsync();

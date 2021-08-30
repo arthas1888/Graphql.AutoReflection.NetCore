@@ -27,7 +27,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             if (whereArgs.Length > 0) whereArgs.Append(" AND ");
 
             var lastValid = false;
-            
+
             foreach (var (propertyInfo, j) in type.GetProperties().Select((v, j) => (v, j)))
             {
 
@@ -85,6 +85,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
         public static void ConcatFilter(List<object> values, StringBuilder expresion, int index,
           string key, object value, bool isList = false, Type type = null, Type modelType = null)
         {
+
             bool filterWithOr = false;
             bool appendKey = true;
             string select;
@@ -196,6 +197,19 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                     values.Add(value);
                     select = string.Format(" {0} @{1}", symbol, index);
                 }
+                else if (value is string && DateTime.TryParse(value.ToString(), out DateTime @date))
+                {
+                    var symbol = " = ";
+                    if (Regex.Match(key, "_gte").Success) { symbol = " >= "; patternStr = "_gte"; }
+                    else if (Regex.Match(key, "_gt").Success) { symbol = " > "; patternStr = "_gt"; }
+                    else if (Regex.Match(key, "_lte").Success) { symbol = " <= "; patternStr = "_lte"; }
+                    else if (Regex.Match(key, "_lt").Success) { symbol = " < "; patternStr = "_lt"; }
+
+                    key = Regex.Replace(key, patternStr, "");
+
+                    values.Add(@date);
+                    select = string.Format(" {0} @{1}", symbol, index);
+                }
                 else
                 {
                     values.Add(value);
@@ -244,6 +258,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                         }
                         else
                         {
+                            //Console.WriteLine($" ************************ name {argument.Key} Value {argument.Value.Value} {argument.Value.Value.GetType()}");
                             FilterArguments<TUser, TRole, TUserRole>(argument.Key, argument.Value.Value, type, i, args, whereArgs);
                             i++;
                         }
@@ -450,7 +465,6 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                 }
                 //Console.WriteLine($"=================================type {type} name {keyName} fieldName {fieldName} isList {isList} fieldLocalType {fieldLocalType} =========================");
             }
-
             ConcatFilter(args, whereArgs, i, alias != null ? isList ? $"{alias}{keyName}" : $"{alias}.{keyName}" : keyName, value,
                 type: fieldLocalType, isList: isList, modelType: type);
         }

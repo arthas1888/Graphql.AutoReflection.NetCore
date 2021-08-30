@@ -621,7 +621,7 @@ namespace SER.Graphql.Reflection.NetCore
                     TableArgs.Add(new QueryArgument<MyDateTimeGraphType> { Name = $"{columnName}_gte" });
                     TableArgs.Add(new QueryArgument<MyDateTimeGraphType> { Name = $"{columnName}_lt" });
                     TableArgs.Add(new QueryArgument<MyDateTimeGraphType> { Name = $"{columnName}_lte" });
-                    TableArgs.Add(new QueryArgument<MyDateTimeGraphType> { Name = $"{columnName}_isnull" });
+                    TableArgs.Add(new QueryArgument<BooleanGraphType> { Name = $"{columnName}_isnull" });
                 }
                 else if (type == typeof(int?) || type == typeof(int) || type == typeof(decimal?) || type == typeof(decimal)
                     || type == typeof(double?) || type == typeof(double) || type == typeof(float?) || type == typeof(float))
@@ -670,7 +670,7 @@ namespace SER.Graphql.Reflection.NetCore
                     queryArguments.Add(new QueryArgument<MyDateTimeGraphType> { Name = $"{columnName}_gte" });
                     queryArguments.Add(new QueryArgument<MyDateTimeGraphType> { Name = $"{columnName}_lt" });
                     queryArguments.Add(new QueryArgument<MyDateTimeGraphType> { Name = $"{columnName}_lte" });
-                    queryArguments.Add(new QueryArgument<MyDateTimeGraphType> { Name = $"{columnName}_isnull" });
+                    queryArguments.Add(new QueryArgument<BooleanGraphType> { Name = $"{columnName}_isnull" });
                 }
                 else if (type == typeof(int?) || type == typeof(int) || type == typeof(decimal?) || type == typeof(decimal)
                     || type == typeof(double?) || type == typeof(double) || type == typeof(float?) || type == typeof(float))
