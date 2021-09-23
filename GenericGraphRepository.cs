@@ -502,7 +502,7 @@ namespace SER.Graphql.Reflection.NetCore
                     {
                         try
                         {
-                            //Console.WriteLine($"___________ key: {values.Key} values {values.Value} ");
+                            //Console.WriteLine($"___________ key: {values.Key} values {values.Value} {values.Value.GetType()}");
                             var propertyInfo = typeof(T).GetProperty(values.Key);
                             if (propertyInfo.Name == "id") continue;
 
@@ -634,6 +634,7 @@ namespace SER.Graphql.Reflection.NetCore
                 var dataDb = iQueryable.Where(expToEvaluate).ToList();
 
 
+                //Console.WriteLine($"  ***************** values {JsonSerializer.Serialize(values)} ");
                 var stringJson = JsonSerializer.Serialize(values);
                 var jsonElement = ToJsonDocument(stringJson);
 
@@ -643,11 +644,17 @@ namespace SER.Graphql.Reflection.NetCore
                 {
                     var objectElement = array.Current;
                     var props = objectElement.EnumerateObject();
+
+                    if (!props.Select(x => x.Name).Contains(keyName))
+                    {
+                        iQueryable.Add(JsonSerializer.Deserialize<M>(objectElement.ToString()));
+                        continue;
+                    }
                     var propId = props.FirstOrDefault(x => x.Name == keyName);
 
-                    //Console.WriteLine($"  ***************** propId {propId} { propId.Value.GetInt32()}");
+                    //Console.WriteLine($"  ***************** propId {propId} {propId.Equals(null)} ");
 
-                    Func<M, bool> isEqual = (a) => propId.Value.GetInt32() == int.Parse(keyProperty.First(x => x.Name == keyName).GetValue(a).ToString());
+                    bool isEqual(M a) => propId.Value.GetInt32() == int.Parse(keyProperty.First(x => x.Name == keyName).GetValue(a).ToString());
                     var obj = dataDb.FirstOrDefault(isEqual);
                     var entity = entities.FirstOrDefault(isEqual);
 
