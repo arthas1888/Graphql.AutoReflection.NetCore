@@ -14,6 +14,7 @@ using System.ComponentModel.DataAnnotations;
 using SER.Models;
 using SER.Models.SERAudit;
 using System.Collections;
+using SER.Graphql.Reflection.NetCore.Models;
 
 namespace SER.Graphql.Reflection.NetCore.Generic
 {
@@ -66,6 +67,9 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             using DbContext _dbContext = (DbContext)Activator.CreateInstance(typeof(TContext), new object[] { optionsBuilder.Options });
             var assembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(x => x.GetName().Name == _dbContext.GetType().Assembly.GetName().Name);
 
+
+            var jsonModelTypes = assembly.GetTypes().Where(x => !x.IsAbstract && typeof(JsonBaseModel).IsAssignableFrom(x)).ToList();
+
             foreach (var entityType in _dbContext.Model.GetEntityTypes())
             {
                 var tableName = entityType.GetTableName();
@@ -104,6 +108,22 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                 _tableNameLookup.InsertKeyName(elementType.Name.ToSnakeCase());
 
             }
+
+            foreach (var entityType in jsonModelTypes)
+            {
+                var tableName = entityType.Name;
+
+                metaTables.Add(new TableMetadata
+                {
+                    TableName = tableName,
+                    AssemblyFullName = entityType.FullName,
+                    Columns = GetColumnsMetadata(null, entityType),
+                    Type = entityType,
+                    NamePK = null
+                });
+                _tableNameLookup.InsertKeyName(entityType.Name.ToSnakeCase());
+            }
+
             if (_optionsDelegate.CurrentValue.EnableAudit)
             {
                 metaTables.Add(new TableMetadata

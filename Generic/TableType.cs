@@ -88,7 +88,7 @@ namespace SER.Graphql.Reflection.NetCore
                     new QueryArgument<BooleanGraphType> { Name = "join" }
                 };
 
-                var listObjectGraph = GetPrimaryListInstances(mainTableColumn, queryThirdArguments: queryThirdArguments);
+                var listObjectGraph = GetPrimaryListInstances(mainTableColumn, queryThirdArguments: queryThirdArguments, isList: true);
 
                 var inherateType = typeof(CustomListResolver<>).MakeGenericType(new Type[] { mainTableColumn.Type });
                 dynamic resolver = Activator.CreateInstance(inherateType, new object[] { mainTableColumn.Type, parentType, _httpContextAccessor, _accessor, _dbMetadata });
@@ -298,14 +298,14 @@ namespace SER.Graphql.Reflection.NetCore
         }
 
         private dynamic GetPrimaryListInstances(ColumnMetadata columnMetadata,
-           QueryArguments queryThirdArguments = null)
+           QueryArguments queryThirdArguments = null, bool isList = false)
         {
             var metaTable = _dbMetadata.GetTableMetadatas().FirstOrDefault(x => x.Type.Name == columnMetadata.Type.Name);
 
             dynamic listGraphType = null;
             if (!_tableNameLookup.ExistListGraphType($"{columnMetadata.ColumnName}_primary_list"))
             {
-                var tableType = GetSecondGraphType(columnMetadata, queryThirdArguments, metaTable);
+                var tableType = GetSecondGraphType(columnMetadata, queryThirdArguments, metaTable, isList: true);
                 var inherateListType = typeof(ListGraphType<>).MakeGenericType(new Type[] { tableType.GetType() });
                 listGraphType = Activator.CreateInstance(inherateListType);
                 listGraphType.ResolvedType = tableType;
@@ -316,6 +316,7 @@ namespace SER.Graphql.Reflection.NetCore
                 foreach (var tableColumn in metaTable.Columns)
                 {
                     FillArguments(queryThirdArguments, tableColumn.ColumnName, tableColumn.Type);
+                    FillArgs(tableColumn.ColumnName, tableColumn.Type, parentModel: columnMetadata.ColumnName, isList: isList);
                 }
             }
             return _tableNameLookup.GetOrInsertListGraphType($"{columnMetadata.ColumnName}_primary_list", listGraphType);
@@ -356,7 +357,7 @@ namespace SER.Graphql.Reflection.NetCore
             {
                 //Creacion de instancia
                 //objectGraphType = new ObjectGraphType();
-                var inherateType = typeof(ObjectGraphType<>).MakeGenericType(new Type[] { columnMetadata.Type });                
+                var inherateType = typeof(ObjectGraphType<>).MakeGenericType(new Type[] { columnMetadata.Type });
                 objectGraphType = Activator.CreateInstance(inherateType);
                 objectGraphType.Name = key;
                 var permission = columnMetadata.Type.Name.ToLower();
@@ -374,6 +375,8 @@ namespace SER.Graphql.Reflection.NetCore
                 foreach (var tableColumn in metaTable.Columns)
                 {
                     InitGraphTableColumn(columnMetadata.Type, tableColumn, objectGraphType, queryArguments);
+
+                    FillArgs(tableColumn.ColumnName, tableColumn.Type, parentModel: columnMetadata.ColumnName, isList: isList);
                 }
             }
             else
@@ -381,6 +384,7 @@ namespace SER.Graphql.Reflection.NetCore
                 foreach (var tableColumn in metaTable.Columns)
                 {
                     FillArguments(queryArguments, tableColumn.ColumnName, tableColumn.Type);
+                    FillArgs(tableColumn.ColumnName, tableColumn.Type, parentModel: columnMetadata.ColumnName, isList: isList);
                 }
             }
             return _tableNameLookup.GetOrInsertGraphType(key, objectGraphType);
@@ -588,8 +592,11 @@ namespace SER.Graphql.Reflection.NetCore
             return _tableNameLookup.GetOrInsertGraphType(key, objectGraphInternal);
         }
 
-        private void FillArgs(string columnName, Type type)
+        private void FillArgs(string columnName, Type type, string parentModel = "", bool isList = false)
         {
+            if (!string.IsNullOrEmpty(parentModel))
+                if (isList) columnName = $"{parentModel}__list__{columnName}";
+                else columnName = $"{parentModel}__model__{columnName}";
             if (TableArgs == null)
             {
                 TableArgs = new QueryArguments();

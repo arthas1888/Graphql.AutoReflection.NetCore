@@ -34,17 +34,21 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             if (columnMetadata.DataType == "uniqueidentifier") return;
             if (columnMetadata.IsJson)    // incluye litas de cada objeto
             {
-                Field(
-                   typeof(string).GetGraphTypeFromType(true),
-                   columnMetadata.ColumnName,
-                   resolve: context =>
-                   {
-                       var pi = parentType.GetProperty(columnMetadata.ColumnName);
-                       dynamic value = pi.GetValue(context.Source);
-                       if (value == null) return null;
-                       return System.Text.Json.JsonSerializer.Serialize(value);
-                   }
-                );
+                try
+                {
+                    AddField(new FieldType
+                    {
+                        Name = columnMetadata.ColumnName,
+                        ResolvedType = GetInternalInstances(columnMetadata)
+                    });
+                }
+                catch (Exception)
+                {
+                    Field(
+                        typeof(string).GetGraphTypeFromType(true),
+                        columnMetadata.ColumnName
+                    );
+                }
             }
             else if (columnMetadata.IsList)    // incluye litas de cada objeto
             {
