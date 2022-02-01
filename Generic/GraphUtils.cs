@@ -184,7 +184,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             }
             else
             {
-                if (value is DateTime || value is int)
+                if (value is DateTime || value is int || value is long)
                 {
                     var symbol = " = ";
                     if (Regex.Match(key, "_gte").Success) { symbol = " >= "; patternStr = "_gte"; }
@@ -494,6 +494,12 @@ namespace SER.Graphql.Reflection.NetCore.Generic
 
                 if (type == typeof(int))
                     return typeof(MyIntGraphType);
+
+                if (type == typeof(long))
+                    return typeof(MyLongGraphType);
+
+                if (type == typeof(ulong))
+                    return typeof(MyLongGraphType);
 
                 if (type == typeof(bool))
                     return typeof(MyBooleanGraphType);

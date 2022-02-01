@@ -83,4 +83,81 @@ namespace SER.Graphql.Reflection.NetCore.CustomScalar
             _ => ThrowASTConversionError(value)
         };
     }
+
+
+    public class MyLongGraphType : LongGraphType
+    {
+        public MyLongGraphType()
+        {
+            Name = "Long";
+        }
+
+        public override object ParseLiteral(IValue value) => value switch
+        {
+            StringValue s => ParseValue(s.Value),
+            IntValue intValue => intValue.Value,
+            LongValue longValue => longValue.Value,
+            BigIntValue bigIntValue => checked((long)bigIntValue.Value),
+            NullValue _ => null,
+            _ => ThrowLiteralConversionError(value)
+        };
+
+        public override bool CanParseLiteral(IValue value)
+        {
+            try
+            {
+                _ = ParseLiteral(value);
+                return (value) switch
+                {
+                    IntValue _ => true,
+                    StringValue str => long.TryParse(str.Value, out long @res),
+                    LongValue longValue => long.MinValue <= longValue.Value && longValue.Value <= long.MaxValue,
+                    BigIntValue bigIntValue => long.MinValue <= bigIntValue.Value && bigIntValue.Value <= long.MaxValue,
+                    NullValue _ => true,
+                    _ => false
+                };
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public override object ParseValue(object value) => value switch
+        {
+            long _ => value,
+
+            null => null,
+            sbyte sb => checked((long)sb),
+            byte b => checked((long)b),
+            short s => checked((long)s),
+            ushort us => checked((long)us),
+            uint ui => checked((long)ui),
+            int i => checked((long)i),
+            ulong ul => checked((long)ul),
+            string str => long.Parse(str),
+            BigInteger bi => checked((long)bi),
+            _ => ThrowValueConversionError(value)
+        };
+
+        public override bool CanParseValue(object value)
+        {
+            try
+            {
+                _ = ParseValue(value);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public override IValue ToAST(object value) => Serialize(value) switch
+        {
+            long b => new LongValue(b),
+            null => new NullValue(),
+            _ => ThrowASTConversionError(value)
+        };
+    }
 }

@@ -125,6 +125,16 @@ namespace SER.Graphql.Reflection.NetCore
                     TableArgs.Add(new QueryArgument<StringGraphType> { Name = $"{columnName}_iext_or" });
                     TableArgs.Add(new QueryArgument<BooleanGraphType> { Name = $"{columnName}_isnull" });
                 }
+                else if (type == typeof(ulong?) || type == typeof(ulong) || type == typeof(long?) || type == typeof(long))
+                {
+                    TableArgs.Add(new QueryArgument<MyLongGraphType> { Name = $"{columnName}_gt" });
+                    TableArgs.Add(new QueryArgument<MyLongGraphType> { Name = $"{columnName}_gte" });
+                    TableArgs.Add(new QueryArgument<MyLongGraphType> { Name = $"{columnName}_lt" });
+                    TableArgs.Add(new QueryArgument<MyLongGraphType> { Name = $"{columnName}_lte" });
+                    TableArgs.Add(new QueryArgument<StringGraphType> { Name = $"{columnName}_iext" });
+                    TableArgs.Add(new QueryArgument<StringGraphType> { Name = $"{columnName}_iext_or" });
+                    TableArgs.Add(new QueryArgument<BooleanGraphType> { Name = $"{columnName}_isnull" });
+                }
                 else if (type != typeof(bool))
                 {
                     TableArgs.Add(new QueryArgument<StringGraphType> { Name = $"{columnName}_iext" });

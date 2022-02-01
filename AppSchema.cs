@@ -34,6 +34,7 @@ namespace SER.Graphql.Reflection.NetCore
 
             RegisterType(new MyBooleanGraphType());
             RegisterType(new MyIntGraphType());
+            RegisterType(new MyLongGraphType());
             RegisterType(new MyDateTimeGraphType());
         }
 
