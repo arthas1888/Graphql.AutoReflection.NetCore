@@ -321,7 +321,7 @@ namespace SER.Graphql.Reflection.NetCore.Custom
         private async Task WriteResponseAsync(HttpContext context, ExecutionResult result)
         {
             if (_fillDataExtensions.GetAll().Count > 0)
-                result.Extensions = _fillDataExtensions.GetAll();
+                result.Extensions = _fillDataExtensions.GetAll().ToDictionary(entry => entry.Key, entry => entry.Value);
             context.Response.ContentType = "application/json";
             context.Response.StatusCode = result.Errors?.Any() == true ? (int)HttpStatusCode.BadRequest : (int)HttpStatusCode.OK;
             if (context.Response.StatusCode == (int)HttpStatusCode.BadRequest)

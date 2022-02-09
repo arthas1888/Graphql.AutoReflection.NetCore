@@ -1,5 +1,6 @@
 ﻿using GraphQL.Types;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -26,12 +27,12 @@ namespace SER.Graphql.Reflection.NetCore.Generic
 
     public class TableNameLookup : ITableNameLookup
     {
-        private IDictionary<string, string> _lookupTable = new Dictionary<string, string>();
-        private IDictionary<string, dynamic> _graphTypeDict = new Dictionary<string, dynamic>();
-        private IDictionary<string, dynamic> _inputGraphTypeDict = new Dictionary<string, dynamic>();
-        private IDictionary<string, dynamic> _listGraphTypeDict = new Dictionary<string, dynamic>();
-        private IDictionary<string, dynamic> _secondListGraphTypeDict = new Dictionary<string, dynamic>();
-        private IDictionary<string, dynamic> _inputListGraphTypeDict = new Dictionary<string, dynamic>();
+        private readonly ConcurrentDictionary<string, string> _lookupTable = new ConcurrentDictionary<string, string>();
+        private readonly ConcurrentDictionary<string, dynamic> _graphTypeDict = new ConcurrentDictionary<string, dynamic>();
+        private readonly ConcurrentDictionary<string, dynamic> _inputGraphTypeDict = new ConcurrentDictionary<string, dynamic>();
+        private readonly ConcurrentDictionary<string, dynamic> _listGraphTypeDict = new ConcurrentDictionary<string, dynamic>();
+        private readonly ConcurrentDictionary<string, dynamic> _secondListGraphTypeDict = new ConcurrentDictionary<string, dynamic>();
+        private readonly ConcurrentDictionary<string, dynamic> _inputListGraphTypeDict = new ConcurrentDictionary<string, dynamic>();
 
         public bool ExistGraphType(string key)
         {
@@ -50,7 +51,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                 // Console.WriteLine("Table agregada en diccionario cache: " + key);
                 try
                 {
-                    _graphTypeDict.Add(key, objectGraphType);
+                    _graphTypeDict.TryAdd(key, objectGraphType);
                 }
                 catch (Exception) { };
             }
@@ -64,7 +65,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                 // Console.WriteLine("Table agregada en diccionario cache: " + key);
                 try
                 {
-                    _inputGraphTypeDict.Add(key, objectGraphType);
+                    _inputGraphTypeDict.TryAdd(key, objectGraphType);
                 }
                 catch (Exception) { };
             }
@@ -76,7 +77,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             if (!_lookupTable.ContainsKey(correctName))
             {
                 var friendlyName = StringExt.CanonicalName(correctName);
-                _lookupTable.Add(correctName, friendlyName);
+                _lookupTable.TryAdd(correctName, friendlyName);
                 return true;
             }
             return false;
@@ -96,7 +97,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                 // Console.WriteLine("Table agregada en diccionario lista cache: " + key);
                 try
                 {
-                    _listGraphTypeDict.Add(key, listGraphType);
+                    _listGraphTypeDict.TryAdd(key, listGraphType);
                 }
                 catch (Exception) { };
             }
@@ -110,7 +111,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                 // Console.WriteLine("Table agregada en diccionario lista cache: " + key);
                 try
                 {
-                    _secondListGraphTypeDict.Add(key, listGraphType);
+                    _secondListGraphTypeDict.TryAdd(key, listGraphType);
                 }
                 catch (Exception) { };
             }
@@ -134,7 +135,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                 // Console.WriteLine("Table agregada en diccionario lista cache: " + key);
                 try
                 {
-                    _inputListGraphTypeDict.Add(key, objectGraphType);
+                    _inputListGraphTypeDict.TryAdd(key, objectGraphType);
                 }
                 catch (Exception) { };
             }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -7,12 +8,12 @@ namespace SER.Graphql.Reflection.NetCore
 {
     public class FillDataExtensions
     {
-        private Dictionary<string, object> _extensionsDict = new Dictionary<string, object>();
+        private ConcurrentDictionary<string, object> _extensionsDict = new ConcurrentDictionary<string, object>();
 
         public void Add(string key, object value)
         {
             if (!_extensionsDict.ContainsKey(key))
-                _extensionsDict.Add(key, value);
+                _extensionsDict.TryAdd(key, value);
             else
             {
                 var index = 1;
@@ -21,11 +22,11 @@ namespace SER.Graphql.Reflection.NetCore
                     key = $"{key}_{index}";
                     index++;
                 } while (_extensionsDict.ContainsKey(key));
-                _extensionsDict.Add(key, value);
+                _extensionsDict.TryAdd(key, value);
             }
         }
 
-        public Dictionary<string, object> GetAll()
+        public ConcurrentDictionary<string, object> GetAll()
         {
             return _extensionsDict;
         }
