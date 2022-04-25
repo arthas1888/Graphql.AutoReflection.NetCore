@@ -32,6 +32,7 @@ using SER.Graphql.Reflection.NetCore.Models;
 using System.Reactive.Subjects;
 using System.Reactive.Linq;
 using SER.Graphql.Reflection.NetCore.WebSocket;
+using Microsoft.AspNetCore.Hosting;
 
 namespace SER.Graphql.Reflection.NetCore
 {
@@ -45,6 +46,8 @@ namespace SER.Graphql.Reflection.NetCore
         private readonly TContext _context;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly FillDataExtensions _fillDataExtensions;
+        private readonly IWebHostEnvironment _env;
+
         private IConfiguration _config;
         private IMemoryCache _cache;
         private readonly ILogger _logger;
@@ -64,6 +67,7 @@ namespace SER.Graphql.Reflection.NetCore
         public GenericGraphRepository(TContext db,
             IHttpContextAccessor httpContextAccessor,
             FillDataExtensions fillDataExtensions,
+            IWebHostEnvironment env,
             IConfiguration config,
             IOptionsMonitor<SERGraphQlOptions> optionsDelegate)
         {
@@ -78,6 +82,7 @@ namespace SER.Graphql.Reflection.NetCore
             _fillDataExtensions = fillDataExtensions;
             _optionsDelegate = optionsDelegate;
             _cRepositoryLog = httpContextAccessor.HttpContext.RequestServices.GetService<AuditManager>();
+            _env = env;
         }
 
         public string GetCompanyIdUser()
@@ -303,8 +308,11 @@ namespace SER.Graphql.Reflection.NetCore
             var args = new List<object>();
             var orderBy = context.GetArgument<string>("orderBy");
             var take = context.GetArgument<int?>("first");
-
-            string SqlConnectionStr = _optionsDelegate.CurrentValue.ConnectionString;
+            
+            string SqlConnectionStr = !string.IsNullOrEmpty(_optionsDelegate.CurrentValue.ConnectionString) ?
+                _optionsDelegate.CurrentValue.ConnectionString : !string.IsNullOrEmpty(_config.GetConnectionString("DefaultConnection")) ?
+                    _config.GetConnectionString("DefaultConnection") :
+                    _config.GetValue<string>($"{_env.EnvironmentName}:ConnectionStrings:DefaultConnection");
             var optionsBuilder = new DbContextOptionsBuilder<TContext>();
             optionsBuilder.UseNpgsql(SqlConnectionStr, o => o.UseNetTopologySuite());
             optionsBuilder.EnableSensitiveDataLogging();

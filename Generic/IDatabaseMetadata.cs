@@ -15,6 +15,7 @@ using SER.Models;
 using SER.Models.SERAudit;
 using System.Collections;
 using SER.Graphql.Reflection.NetCore.Models;
+using Microsoft.AspNetCore.Hosting;
 
 namespace SER.Graphql.Reflection.NetCore.Generic
 {
@@ -30,12 +31,15 @@ namespace SER.Graphql.Reflection.NetCore.Generic
         private readonly IConfiguration _config;
         private IEnumerable<TableMetadata> _tables;
         private readonly IOptionsMonitor<SERGraphQlOptions> _optionsDelegate;
+        private readonly IWebHostEnvironment _env;        
 
         public DatabaseMetadata(
             ITableNameLookup tableNameLookup,
             IConfiguration config,
+            IWebHostEnvironment env,
             IOptionsMonitor<SERGraphQlOptions> optionsDelegate)
         {
+            _env = env;
             _config = config;
             _tableNameLookup = tableNameLookup;
             _optionsDelegate = optionsDelegate;
@@ -61,7 +65,10 @@ namespace SER.Graphql.Reflection.NetCore.Generic
         {
             var metaTables = new List<TableMetadata>();
 
-            string SqlConnectionStr = _optionsDelegate.CurrentValue.ConnectionString;
+            string SqlConnectionStr = !string.IsNullOrEmpty(_optionsDelegate.CurrentValue.ConnectionString) ?
+                _optionsDelegate.CurrentValue.ConnectionString : !string.IsNullOrEmpty(_config.GetConnectionString("DefaultConnection")) ?
+                    _config.GetConnectionString("DefaultConnection") :
+                    _config.GetValue<string>($"{_env.EnvironmentName}:ConnectionStrings:DefaultConnection");
             var optionsBuilder = new DbContextOptionsBuilder<TContext>();
             optionsBuilder.UseNpgsql(SqlConnectionStr, o => o.UseNetTopologySuite());
             using DbContext _dbContext = (DbContext)Activator.CreateInstance(typeof(TContext), new object[] { optionsBuilder.Options });
