@@ -1,5 +1,6 @@
-﻿using GraphQL.Language.AST;
-using GraphQL.Types;
+﻿using GraphQL.Types;
+using GraphQLParser;
+using GraphQLParser.AST;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,70 +17,40 @@ namespace SER.Graphql.Reflection.NetCore.CustomScalar
             Name = "Boolean";
         }
 
-        public override object ParseLiteral(IValue value) => value switch
+        //public override object ParseLiteral(GraphQLValue value) => value switch
+        //{
+        //    GraphQLBooleanValue b => b.Value,
+        //    GraphQLIntValue i => ParseValue(i.Value),
+        //    GraphQLStringValue s => ParseValue(s.Value),
+        //    GraphQLFloatValue f => ParseValue(f.Value),
+        //    GraphQLNullValue _ => null,
+        //    _ => ThrowLiteralConversionError(value)
+        //};
+        
+        /// <inheritdoc/>
+        public override object ParseLiteral(GraphQLValue value) => value switch
         {
-            BooleanValue b => b.Value,
-            IntValue i => ParseValue(i.Value),
-            LongValue l => ParseValue(l.Value),
-            BigIntValue bi => ParseValue(bi.Value),
-            StringValue s => ParseValue(s.Value),
-            FloatValue f => ParseValue(f.Value),
-            DecimalValue d => ParseValue(d.Value),
-            NullValue _ => null,
+            GraphQLBooleanValue b => b.Value == "true",
+            GraphQLIntValue i => ParseValue(i.Value),
+            GraphQLStringValue s => ParseValue(s.Value),
+            GraphQLFloatValue f => ParseValue(f.Value),
+            GraphQLNullValue _ => null,
             _ => ThrowLiteralConversionError(value)
         };
 
-        public override bool CanParseLiteral(IValue value)
-        {
-            try
-            {
-                _ = ParseLiteral(value);
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
-        }
+        /// <inheritdoc/>
+        public override bool CanParseLiteral(GraphQLValue value)
+            => value is GraphQLBooleanValue || value is GraphQLNullValue;
 
-        public override object ParseValue(object value) => value switch
+        /// <inheritdoc/>
+        public override object? ParseValue(object? value) => value switch
         {
             bool _ => value,
-            byte b => b != 0,
-            sbyte sb => sb != 0,
-            short s => s != 0,
-            ushort us => us != 0,
-            int i => i != 0,
-            uint ui => ui != 0,
-            long l => l != 0,
-            ulong ul => ul != 0,
-            BigInteger bi => bi != 0,
-            float f => f != 0,
-            double d => d != 0,
-            decimal d => d != 0,
-            string s => bool.Parse(s),
+            string _ => bool.Parse(value.ToString()),
             null => null,
             _ => ThrowValueConversionError(value)
         };
 
-        public override bool CanParseValue(object value)
-        {
-            try
-            {
-                _ = ParseValue(value);
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        public override IValue ToAST(object value) => Serialize(value) switch
-        {
-            bool b => new BooleanValue(b),
-            null => new NullValue(),
-            _ => ThrowASTConversionError(value)
-        };
     }
+
 }

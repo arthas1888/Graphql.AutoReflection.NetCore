@@ -1,5 +1,5 @@
-﻿using GraphQL.Language.AST;
-using GraphQL.Types;
+﻿using GraphQL.Types;
+using GraphQLParser.AST;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,36 +16,22 @@ namespace SER.Graphql.Reflection.NetCore.CustomScalar
             Name = "Integer";
         }
 
-        public override object ParseLiteral(IValue value) => value switch
+        public override object ParseLiteral(GraphQLValue value) => value switch
         {
-            StringValue s => ParseValue(s.Value),
-            IntValue intValue => intValue.Value,
-            LongValue longValue => checked((int)longValue.Value),
-            BigIntValue bigIntValue => checked((int)bigIntValue.Value),
-            NullValue _ => null,
+            GraphQLStringValue s => ParseValue(s.Value),
+            GraphQLIntValue intValue => intValue.Value,
+            GraphQLNullValue _ => null,
             _ => ThrowLiteralConversionError(value)
         };
-
-        public override bool CanParseLiteral(IValue value)
+        
+        /// <inheritdoc/>
+        public override bool CanParseLiteral(GraphQLValue value) => value switch
         {
-            try
-            {
-                _ = ParseLiteral(value);
-                return (value) switch
-                {
-                    IntValue _ => true,
-                    StringValue str => int.TryParse(str.Value, out int @res),
-                    LongValue longValue => int.MinValue <= longValue.Value && longValue.Value <= int.MaxValue,
-                    BigIntValue bigIntValue => int.MinValue <= bigIntValue.Value && bigIntValue.Value <= int.MaxValue,
-                    NullValue _ => true,
-                    _ => false
-                };
-            }
-            catch
-            {
-                return false;
-            }
-        }
+            GraphQLIntValue x => int.TryParse(x.Value, out var _),
+            GraphQLStringValue str => int.TryParse(str.Value, out int @res),
+            GraphQLNullValue _ => true,
+            _ => false
+        };
 
         public override object ParseValue(object value) => value switch
         {
@@ -76,12 +62,6 @@ namespace SER.Graphql.Reflection.NetCore.CustomScalar
             }
         }
 
-        public override IValue ToAST(object value) => Serialize(value) switch
-        {
-            int b => new IntValue(b),
-            null => new NullValue(),
-            _ => ThrowASTConversionError(value)
-        };
     }
 
 
@@ -92,28 +72,28 @@ namespace SER.Graphql.Reflection.NetCore.CustomScalar
             Name = "Long";
         }
 
-        public override object ParseLiteral(IValue value) => value switch
+        public override object ParseLiteral(GraphQLValue value) => value switch
         {
-            StringValue s => ParseValue(s.Value),
-            IntValue intValue => intValue.Value,
-            LongValue longValue => longValue.Value,
-            BigIntValue bigIntValue => checked((long)bigIntValue.Value),
-            NullValue _ => null,
+            GraphQLStringValue s => ParseValue(s.Value),
+            GraphQLIntValue intValue => intValue.Value,
+            //GraphQLLongValue longValue => longValue.Value,
+            //GraphQLBigIntValue bigIntValue => checked((long)bigIntValue.Value),
+            GraphQLNullValue _ => null,
             _ => ThrowLiteralConversionError(value)
         };
 
-        public override bool CanParseLiteral(IValue value)
+        public override bool CanParseLiteral(GraphQLValue value)
         {
             try
             {
                 _ = ParseLiteral(value);
                 return (value) switch
                 {
-                    IntValue _ => true,
-                    StringValue str => long.TryParse(str.Value, out long @res),
-                    LongValue longValue => long.MinValue <= longValue.Value && longValue.Value <= long.MaxValue,
-                    BigIntValue bigIntValue => long.MinValue <= bigIntValue.Value && bigIntValue.Value <= long.MaxValue,
-                    NullValue _ => true,
+                    GraphQLIntValue _ => true,
+                    GraphQLStringValue str => long.TryParse(str.Value, out long @res),
+                    //GraphQLLongValue longValue => long.MinValue <= longValue.Value && longValue.Value <= long.MaxValue,
+                    //GraphQLBigIntValue bigIntValue => long.MinValue <= bigIntValue.Value && bigIntValue.Value <= long.MaxValue,
+                    GraphQLNullValue _ => true,
                     _ => false
                 };
             }
@@ -153,11 +133,5 @@ namespace SER.Graphql.Reflection.NetCore.CustomScalar
             }
         }
 
-        public override IValue ToAST(object value) => Serialize(value) switch
-        {
-            long b => new LongValue(b),
-            null => new NullValue(),
-            _ => ThrowASTConversionError(value)
-        };
     }
 }

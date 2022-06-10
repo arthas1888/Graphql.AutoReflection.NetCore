@@ -8,6 +8,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using Microsoft.AspNetCore.Identity;
 using SER.Models;
+using System.Threading.Tasks;
 
 namespace SER.Graphql.Reflection.NetCore.Generic
 {
@@ -34,7 +35,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             _dbMetadata = dbMetadata;
         }
 
-        public object Resolve(IResolveFieldContext context)
+        public ValueTask<object> ResolveAsync(IResolveFieldContext context)
         {
             string paramFK = "";
             //var field = _dataType.GetGenericArguments().Count() > 0 ? _dataType.GetGenericArguments()[0] : null;
@@ -52,7 +53,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             }
 
 
-            return GetLoader(context, $"{paramFK}");
+            return new ValueTask<object>(GetLoader(context, $"{paramFK}"));
         }
 
         public IDataLoaderResult<IEnumerable<T>> GetLoader(IResolveFieldContext context, string param)

@@ -1,10 +1,8 @@
-﻿using GraphQL;
+﻿
+
+using GraphQL;
 using GraphQL.Execution;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using GraphQLParser.AST;
 
 namespace SER.Graphql.Reflection.NetCore.WebSocket
 {
@@ -12,11 +10,11 @@ namespace SER.Graphql.Reflection.NetCore.WebSocket
     {
         protected override IExecutionStrategy SelectExecutionStrategy(ExecutionContext context)
         {
-            return context.Operation.OperationType switch
+            return context.Operation.Operation switch
             {
-                GraphQL.Language.AST.OperationType.Query => ParallelExecutionStrategy.Instance,
-                GraphQL.Language.AST.OperationType.Mutation => SerialExecutionStrategy.Instance,
-                GraphQL.Language.AST.OperationType.Subscription => SubscriptionExecutionStrategy.Instance,
+                OperationType.Query => ParallelExecutionStrategy.Instance,
+                OperationType.Mutation => SerialExecutionStrategy.Instance,
+                //OperationType.Subscription => SubscriptionExecutionStrategy.Instance,
                 _ => base.SelectExecutionStrategy(context)
             };
         }

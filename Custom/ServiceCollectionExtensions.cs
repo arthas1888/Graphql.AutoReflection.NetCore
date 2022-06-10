@@ -1,5 +1,4 @@
 ﻿using GraphQL;
-using GraphQL.Authorization;
 using GraphQL.DataLoader;
 using GraphQL.Server;
 using GraphQL.Types;
@@ -22,28 +21,31 @@ using SER.Models;
 using SER.Graphql.Reflection.NetCore.WebSocket;
 using SER.Graphql.Reflection.NetCore.Permissions;
 using GraphQL.Server.Transports.Subscriptions.Abstractions;
+using GraphQL.MicrosoftDI;
+using GraphQL.SystemTextJson;
+using GraphQL.DI;
 
 namespace SER.Graphql.Reflection.NetCore.Custom
 {
     public static class ServiceCollectionExtensions
     {
-        public static IGraphQLBuilder AddConfigGraphQl<TContext>(this IServiceCollection services, Action<GraphQLOptions, IServiceProvider> configureOptions)
+        public static IServiceCollection AddConfigGraphQl<TContext>(this IServiceCollection services)
           where TContext : DbContext
-           => AddConfigGraphQl<TContext, object, object, object>(services, configureOptions);
+           => AddConfigGraphQl<TContext, object, object, object>(services);
 
-        public static IGraphQLBuilder AddConfigGraphQl<TContext, TUser>(this IServiceCollection services, Action<GraphQLOptions, IServiceProvider> configureOptions)
+        public static IServiceCollection AddConfigGraphQl<TContext, TUser>(this IServiceCollection services)
           where TContext : DbContext
           where TUser : class
-           => AddConfigGraphQl<TContext, TUser, object, object>(services, configureOptions);
+           => AddConfigGraphQl<TContext, TUser, object, object>(services);
 
-        public static IGraphQLBuilder AddConfigGraphQl<TContext, TUser, TRole>(this IServiceCollection services, Action<GraphQLOptions, IServiceProvider> configureOptions)
+        public static IServiceCollection AddConfigGraphQl<TContext, TUser, TRole>(this IServiceCollection services)
            where TContext : DbContext
            where TUser : class
            where TRole : class
-            => AddConfigGraphQl<TContext, TUser, TRole, object>(services, configureOptions);
+            => AddConfigGraphQl<TContext, TUser, TRole, object>(services);
 
-        public static IGraphQLBuilder AddConfigGraphQl<TContext, TUser, TRole, TUserRole>(this IServiceCollection services,
-            Action<GraphQLOptions, IServiceProvider> configureOptions)
+        public static IServiceCollection AddConfigGraphQl<TContext, TUser, TRole, TUserRole>(this IServiceCollection services)
+            
         where TContext : DbContext
         where TUser : class
         where TRole : class
@@ -51,13 +53,13 @@ namespace SER.Graphql.Reflection.NetCore.Custom
         {
             services.AddHttpContextAccessor();
 
-            services.AddSingleton<IDocumentExecuter, MyDocumentExecuter>();
+            //services.AddSingleton<IDocumentExecuter, MyDocumentExecuter>();
             services.AddSingleton<ITableNameLookup, TableNameLookup>();
             services.AddSingleton<TableMetadata>();
             services.AddSingleton<IDatabaseMetadata, DatabaseMetadata<TContext>>();
 
-            services.AddSingleton<IDataLoaderContextAccessor, DataLoaderContextAccessor>();
-            services.AddSingleton<DataLoaderDocumentListener>();
+            //services.AddSingleton<IDataLoaderContextAccessor, DataLoaderContextAccessor>();
+            //services.AddSingleton<DataLoaderDocumentListener>();
 
             services.AddScoped<GraphQLQuery<TUser, TRole, TUserRole>>();
             services.AddScoped<IGraphRepository<Audit>, GenericGraphRepository<Audit, TContext, TUser, TRole, TUserRole>>();
@@ -67,12 +69,31 @@ namespace SER.Graphql.Reflection.NetCore.Custom
             services.AddTransient<ISERFieldResolver<TUser, TRole, TUserRole>, MyFieldResolver<TUser, TRole, TUserRole>>();           
 
             services.AddLogging(builder => builder.AddConsole());
-            services
-                .AddGraphQL(configureOptions)
+            //services
+            //    .AddGraphQL(configureOptions)
+            //    .AddSystemTextJson()
+            //    .AddUserContextBuilder(ctx => new GraphQLUserContext { User = ctx.User })
+            //    .AddDataLoader()
+            //    .AddGraphTypes(ServiceLifetime.Scoped);
+
+            // v5
+            services.AddGraphQL(builder => builder
+                //.AddSchema<AppSchema<TUser, TRole, TUserRole>>())
+                .ConfigureExecutionOptions(options =>
+                {
+                    options.EnableMetrics = true;
+                    options.UnhandledExceptionDelegate = ctx =>
+                    {
+                        Console.WriteLine($"{ctx.OriginalException.Message} occurred");
+                        return Task.CompletedTask;
+                    };
+                })
                 .AddSystemTextJson()
+                .AddDataLoader() // Add required services for DataLoader support
                 .AddUserContextBuilder(ctx => new GraphQLUserContext { User = ctx.User })
-                .AddDataLoader()
-                .AddGraphTypes(ServiceLifetime.Scoped);
+                .AddGraphTypes()
+            );
+
 
             var config = new GraphQLConfiguration(services);
             config.UseDbContext<TContext>();
@@ -99,7 +120,7 @@ namespace SER.Graphql.Reflection.NetCore.Custom
             AddScopedModelsDynamic<TContext, TUser, TRole, TUserRole>(services);
 
 
-            return new GraphQLBuilder(services);
+            return services;
         }
 
         /// <summary>
@@ -107,21 +128,21 @@ namespace SER.Graphql.Reflection.NetCore.Custom
         /// </summary>
         /// <param name="builder"></param>
         /// <returns></returns>
-        public static void AddRequiredAuthorization(this IGraphQLBuilder builder)
-        {
+        //public static void AddRequiredAuthorization(this IGraphQLBuilder builder)
+        //{
             //permissions
-            builder.Services.TryAddSingleton<IAuthorizationEvaluator, AuthorizationEvaluator>();
+            //builder.Services.TryAddSingleton<IAuthorizationEvaluator, AuthorizationEvaluator>();
 
-            // extension method defined in this project
-            builder.Services.AddTransient(s =>
-            {
-                var authSettings = new AuthorizationSettings();
-                // authSettings.AddPolicy("AdminPolicy", _ => _.RequireClaim("role", "Admin"));
-                authSettings.AddPolicy("Authenticated", p => p.RequireAuthenticatedUser());
-                return authSettings;
-            });
+            //// extension method defined in this project
+            //builder.Services.AddTransient(s =>
+            //{
+            //    var authSettings = new AuthorizationSettings();
+            //    // authSettings.AddPolicy("AdminPolicy", _ => _.RequireClaim("role", "Admin"));
+            //    authSettings.AddPolicy("Authenticated", p => p.RequireAuthenticatedUser());
+            //    return authSettings;
+            //});
             //builder.Services.AddTransient<IValidationRule, CustomAuthorizationValidationRule>();
-        }
+        //}
 
         public static void AddScopedModelsDynamic<TContext, TUser, TRole, TUserRole>(this IServiceCollection services)
              where TContext : DbContext
@@ -135,23 +156,23 @@ namespace SER.Graphql.Reflection.NetCore.Custom
                 var interfaceType = typeof(IGraphRepository<>).MakeGenericType(new Type[] { type });
                 var inherateType = typeof(GenericGraphRepository<,,,,>).MakeGenericType(new Type[] { type, typeof(TContext),
                     typeof(TUser),typeof(TRole), typeof(TUserRole)});
-                ServiceLifetime serviceLifetime = ServiceLifetime.Scoped;
+                var serviceLifetime = Microsoft.Extensions.DependencyInjection.ServiceLifetime.Scoped;
                 // Console.WriteLine($"Dependencia IGraphRepository registrada type {type.Name}");
                 services.TryAdd(new ServiceDescriptor(interfaceType, inherateType, serviceLifetime));
 
                 var interfaceHandleType = typeof(IHandleMsg<>).MakeGenericType(new Type[] { type });
                 var inherateHandleType = typeof(HandleMsg<>).MakeGenericType(new Type[] { type });
-                services.TryAdd(new ServiceDescriptor(interfaceHandleType, inherateHandleType, ServiceLifetime.Singleton));
+                services.TryAdd(new ServiceDescriptor(interfaceHandleType, inherateHandleType, Microsoft.Extensions.DependencyInjection.ServiceLifetime.Singleton));
             }
         }
     }
-    internal sealed class GraphQLBuilder : IGraphQLBuilder
-    {
-        public IServiceCollection Services { get; }
+    //internal sealed class GraphQLBuilder : IGraphQLBuilder
+    //{
+    //    public IServiceCollection Services { get; }
 
-        public GraphQLBuilder(IServiceCollection services)
-        {
-            Services = services;
-        }
-    }
+    //    public GraphQLBuilder(IServiceCollection services)
+    //    {
+    //        Services = services;
+    //    }
+    //}
 }

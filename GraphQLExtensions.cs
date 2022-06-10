@@ -1,5 +1,4 @@
 ﻿using GraphQL;
-using GraphQL.Authorization;
 using GraphQL.Builders;
 using GraphQL.Types;
 using Microsoft.Extensions.Options;

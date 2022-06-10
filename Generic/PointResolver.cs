@@ -5,6 +5,7 @@ using NetTopologySuite.Geometries;
 using Newtonsoft.Json;
 using SER.Graphql.Reflection.NetCore.Utilities;
 using System;
+using System.Threading.Tasks;
 
 namespace SER.Graphql.Reflection.NetCore.Generic
 {
@@ -28,5 +29,9 @@ namespace SER.Graphql.Reflection.NetCore.Generic
 
         }
 
+        public ValueTask<object> ResolveAsync(IResolveFieldContext context)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

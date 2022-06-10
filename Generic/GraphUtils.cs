@@ -7,7 +7,6 @@ using System.Text.RegularExpressions;
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using GraphQL;
-using GraphQL.Language.AST;
 using GraphQL.Types;
 using Microsoft.AspNetCore.Identity;
 using System.Text.Json.Serialization;
@@ -16,6 +15,8 @@ using System.Text.Json;
 using System.Collections;
 using GraphQL.Execution;
 using SER.Graphql.Reflection.NetCore.CustomScalar;
+using GraphQLParser.AST;
+using GraphQLParser;
 
 namespace SER.Graphql.Reflection.NetCore.Generic
 {
@@ -230,7 +231,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                 expresion.Append(")");
         }
 
-        public static void DetectChild<TUser, TRole, TUserRole>(IList<ISelection> selections, List<string> includes, dynamic resolvedType, List<object> args,
+        public static void DetectChild<TUser, TRole, TUserRole>(IResolveFieldContext context, List<GraphQLField> selections, List<string> includes, dynamic resolvedType, List<object> args,
             StringBuilder whereArgs, string mainModel = "", IDictionary<string, ArgumentValue> arguments = null, Type mainType = null)
             where TUser : class
             where TRole : class
@@ -250,6 +251,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                 {
                     if (argument.Key != null && argument.Value.Value != null)
                     {
+                        // Console.WriteLine($" ************************ name {argument.Key} Value {argument.Value.Value} {argument.Value.Value.GetType()}");
                         if (new string[] { "orderBy", "first", "page", "join" }.Contains(argument.Key)) continue;
 
                         if (argument.Key == "all")
@@ -258,8 +260,8 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                         }
                         else
                         {
-                            //Console.WriteLine($" ************************ name {argument.Key} Value {argument.Value.Value} {argument.Value.Value.GetType()}");
-                            FilterArguments<TUser, TRole, TUserRole>(argument.Key, argument.Value.Value, type, i, args, whereArgs);
+                            Console.WriteLine($" ************************ name {argument.Key} Value {argument.Value.Value} {argument.Value.Value.GetType()}");
+                            FilterArguments<TUser, TRole, TUserRole>(argument.Key, GetRealValue((dynamic)argument.Value.Value), type, i, args, whereArgs);
                             i++;
                         }
                     }
@@ -267,12 +269,12 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             }
             if (selections != null)
             {
-                foreach (Field field in selections)
+                foreach (GraphQLField field in selections)
                 {
-                    // Console.WriteLine($"name {field.Name}");
-                    if (field.SelectionSet.Selections.Count > 0)
+                    Console.WriteLine($"name {field.Name}");
+                    if (field.SelectionSet != null && field.SelectionSet.Selections.Count > 0)
                     {
-                        model = field.Name;
+                        model = field.Name.StringValue;
                         if ((mainType == typeof(TUser) && typeof(IdentityUser).IsAssignableFrom(typeof(TUser)))
                             || (mainType == typeof(TRole) && typeof(IdentityRole).IsAssignableFrom(typeof(TRole)))
                             || (mainType == typeof(TUserRole))
@@ -281,7 +283,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
 
                         try
                         {
-                            fieldType = ((IEnumerable<FieldType>)resolvedType.Fields).SingleOrDefault(x => x.Name == field.Name);
+                            fieldType = ((IEnumerable<FieldType>)resolvedType.Fields).SingleOrDefault(x => x.Name == field.Name.StringValue);
                         }
                         catch (Exception) { }
                         if (fieldType != null)
@@ -308,7 +310,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                         {
                             foreach (var argument in field.Arguments)
                             {
-                                if (new string[] { "orderby", "first", "page", "join" }.Contains(argument.Name)) continue;
+                                if (new string[] { "orderby", "first", "page", "join" }.ToList().Contains(argument.Name.StringValue)) continue;
 
                                 var headerModel = model;
                                 if (!string.IsNullOrEmpty(mainModel))
@@ -316,37 +318,40 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                                 if (argument.Name == "all")
                                 {
                                     if (innerType != null)
-                                        i = FilterAllFields(innerType, args, whereArgs, i, argument.Value.Value.ToString(), parentModel: headerModel);
+                                        i = FilterAllFields(innerType, args, whereArgs, i, GetRealValue(((dynamic)argument.Value).Value), parentModel: headerModel);
                                 }
+                                // detect if field is object
                                 else
                                 {
+                                    Console.WriteLine($" ************************ name {argument.Name.StringValue} GetType {GetRealValue(((dynamic)argument.Value).Value)}  ---- ");
+
                                     if (innerType != null)
-                                        FilterArguments<TUser, TRole, TUserRole>(argument.Name, argument.Value.Value, innerType, i, args, whereArgs, alias: headerModel);
+                                        FilterArguments<TUser, TRole, TUserRole>(argument.Name.StringValue, GetRealValue(((dynamic)argument.Value).Value), innerType, i, args, whereArgs, alias: headerModel);
                                     i++;
                                 }
                             }
                         }
-                        else if (field.Arguments != null && field.Arguments.Count() > 0)
+                        else if (field.Arguments != null && field.Arguments.Count > 0)
                         {
-                            if (field.Arguments.Any(x => x.Name == "join" && (bool)x.Value.Value == true))
+                            if (field.Arguments.Any(x => x.Name.StringValue == "join")) //  && (bool)x.Value.Value == true))
                             {
                                 joinList = true;
                                 includes.Add(model);
 
                                 foreach (var argument in field.Arguments)
                                 {
-                                    if (new string[] { "orderBy", "first", "join" }.Contains(argument.Name)) continue;
+                                    if (new string[] { "orderBy", "first", "join" }.ToList().Contains(argument.Name.StringValue)) continue;
 
                                     if (argument.Name == "all")
                                     {
                                         if (innerType != null)
-                                            i = FilterAllFields(innerType, args, whereArgs, i, argument.Value.Value.ToString(),
+                                            i = FilterAllFields(innerType, args, whereArgs, i, GetRealValue(((dynamic)argument.Value).Value),
                                             isList: true, parentModel: model);
                                     }
                                     else
                                     {
                                         if (innerType != null)
-                                            FilterArguments<TUser, TRole, TUserRole>(argument.Name, argument.Value.Value, innerType, i, args, whereArgs,
+                                            FilterArguments<TUser, TRole, TUserRole>(argument.Name.StringValue, GetRealValue(((dynamic)argument.Value).Value), innerType, i, args, whereArgs,
                                                 isList: true, alias: $"{model}.Any(");
                                         i++;
                                     }
@@ -364,10 +369,31 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                             }
                             catch (Exception) { }
                         }
-                        DetectChild<TUser, TRole, TUserRole>(field.SelectionSet.Selections, includes, innerResolvedType, args, whereArgs, mainModel: model, mainType: innerType);
+                        DetectChild<TUser, TRole, TUserRole>(context, field.SelectionSet.Selections.Where(x => x is GraphQLField)
+                            .Select(x => x as GraphQLField).ToList(), includes, innerResolvedType, args, whereArgs, mainModel: model, mainType: innerType);
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// obtiene el valor verdadero de un campo tipo ROM
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        private static object GetRealValue(dynamic value)
+        {
+            if (value is ROM)
+            {
+                if (int.TryParse(value.ToString(), out int @int))
+                    return @int;
+                if (double.TryParse(value.ToString(), out double @double))
+                    return @double;
+                if (bool.TryParse(value.ToString(), out bool @bool))
+                    return @bool;
+                return value.ToString();
+            }
+            else return value;
         }
 
         public static string FirstLetterToUpper(string str)

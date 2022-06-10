@@ -1,5 +1,4 @@
 ﻿using GraphQL;
-using GraphQL.Language.AST;
 using GraphQL.Resolvers;
 using GraphQL.Types;
 using GraphQL.Validation;
@@ -9,6 +8,8 @@ using SER.Graphql.Reflection.NetCore.Utilities;
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Linq;
+using System.Threading.Tasks;
+using GraphQLParser.AST;
 
 namespace SER.Graphql.Reflection.NetCore.Generic
 {
@@ -51,7 +52,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             }
 
 
-            var alias = string.IsNullOrEmpty(context.FieldAst.Alias) ? context.FieldAst.Name : context.FieldAst.Alias;
+            var alias = string.IsNullOrEmpty(context.FieldAst.Alias?.Name?.StringValue) ? context.FieldAst.Name.StringValue : context.FieldAst.Alias.Name.StringValue;
             var mainType = _type;
 
             string model = "";
@@ -59,7 +60,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             List<string> includes = new();
             dynamic resolvedType = context.FieldDefinition.ResolvedType;
 
-            foreach (Field field in context.FieldAst.SelectionSet.Selections)
+            foreach (dynamic field in context.FieldAst.SelectionSet.Selections)
             {
                 if (field.SelectionSet.Selections.Count > 0)
                 {
@@ -86,11 +87,11 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             {
                 var argName = context.FieldAst.Arguments.FirstOrDefault(x => x.Name == _type.Name.ToLower().ToSnakeCase());
                 object dbEntity = null;
-                var variable = context.Variables.FirstOrDefault(x => x.Name == (string)argName.Value.Value);
+                var variable = context.Variables.FirstOrDefault(x => x.Name == (string)argName.Value.GetPropertyValue(typeof(string)));
                 if (variable != null && variable.Value.GetType() == typeof(Dictionary<string, object>))
                     dbEntity = service.Update(id, entity, (Dictionary<string, object>)variable.Value, alias, sendObjFirebase, includes);
-                else
-                    dbEntity = service.Update(id, entity, (Dictionary<string, object>)argName.Value.Value, alias, sendObjFirebase, includes);
+                //else
+                //    dbEntity = service.Update(id, entity, (Dictionary<string, object>)argName.Value.Value, alias, sendObjFirebase, includes);
 
                 if (dbEntity == null)
                 {
@@ -116,11 +117,16 @@ namespace SER.Graphql.Reflection.NetCore.Generic
 
         private void GetError(IResolveFieldContext context)
         {
-            var error = new ValidationError(context.Document.OriginalQuery,
+            var error = new ValidationError(context.Document.Source,
                 "not-found",
                 "Couldn't find entity in db.",
-                new INode[] { context.FieldAst });
+                new ASTNode[] { context.FieldAst });
             context.Errors.Add(error);
+        }
+
+        public ValueTask<object> ResolveAsync(IResolveFieldContext context)
+        {
+            throw new NotImplementedException();
         }
     }
 }

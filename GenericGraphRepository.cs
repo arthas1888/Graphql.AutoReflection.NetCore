@@ -33,6 +33,7 @@ using System.Reactive.Subjects;
 using System.Reactive.Linq;
 using SER.Graphql.Reflection.NetCore.WebSocket;
 using Microsoft.AspNetCore.Hosting;
+using GraphQLParser.AST;
 
 namespace SER.Graphql.Reflection.NetCore
 {
@@ -111,6 +112,10 @@ namespace SER.Graphql.Reflection.NetCore
         public async Task<IEnumerable<T>> GetAllAsync(string alias, List<string> includeExpressions = null,
             string orderBy = "", string whereArgs = "", int? take = null, int? offset = null, Dictionary<string, object> customfilters = null, params object[] args)
         {
+            Console.WriteLine($" --------------------whereArgs: {whereArgs} --------------------");
+            Console.WriteLine($" --------------------args: {string.Join(", ", args)} --------------------");
+            args.ToList().ForEach(x => Console.WriteLine($" --------------------args: {x} type {x.GetType()}  --------------------"));
+            
             return await GetQuery(alias, includeExpressions: includeExpressions, orderBy: orderBy,
                 first: take, offset: offset, whereArgs: whereArgs, customfilters: customfilters, args: args)
                 .AsNoTracking().ToListAsync();
@@ -329,7 +334,8 @@ namespace SER.Graphql.Reflection.NetCore
             }
 
             List<string> includeExpressions = new();
-            GraphUtils.DetectChild<TUser, TRole, TUserRole>(context.FieldAst.SelectionSet.Selections, includeExpressions,
+            GraphUtils.DetectChild<TUser, TRole, TUserRole>(context, context.FieldAst.SelectionSet.Selections.Where(x => x is GraphQLField)
+                        .Select(x => x as GraphQLField).ToList(), includeExpressions,
                    ((dynamic)context.FieldDefinition.ResolvedType).ResolvedType, args, whereArgs,
                    arguments: context.Arguments, mainType: typeof(T));
 

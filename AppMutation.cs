@@ -3,8 +3,6 @@ using GraphQL.Types;
 using Microsoft.AspNetCore.Http;
 using System;
 using SER.Graphql.Reflection.NetCore.Utilities;
-using System.Linq;
-using GraphQL.Authorization;
 using Microsoft.Extensions.Options;
 using SER.Graphql.Reflection.NetCore.Builder;
 using GraphQL.DataLoader;

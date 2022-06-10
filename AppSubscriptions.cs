@@ -1,9 +1,7 @@
 ﻿using GraphQL;
-using GraphQL.Authorization;
 using GraphQL.DataLoader;
 using GraphQL.Resolvers;
 using GraphQL.Server.Transports.Subscriptions.Abstractions;
-using GraphQL.Subscription;
 using GraphQL.Types;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
@@ -74,13 +72,13 @@ namespace SER.Graphql.Reflection.NetCore
                 var inherateEventStreamType = typeof(AppEventStreamResolver<>).MakeGenericType(new Type[] { metaTable.Type });
                 dynamic eventStreamResolver = Activator.CreateInstance(inherateEventStreamType, new object[] { _httpContextAccessor });
 
-                AddField(new EventStreamFieldType
+                AddField(new FieldType
                 {
                     Name = $"subsciption_{friendlyTableName}",
                     Type = tableType.GetType(),
                     ResolvedType = tableType,
                     Resolver = funcFieldResolver,
-                    Subscriber = eventStreamResolver,
+                    StreamResolver = eventStreamResolver,
                     Arguments = new QueryArguments(
                         new QueryArgument<StringGraphType> { Name = "field" },
                         new QueryArgument<IntGraphType> { Name = "value" },
@@ -92,7 +90,7 @@ namespace SER.Graphql.Reflection.NetCore
 
     }
 
-    public class AppFuncFieldResolver<TReturnType> : IFieldResolver<TReturnType>, IFieldResolver
+    public class AppFuncFieldResolver<TReturnType> : IFieldResolver
     {
 
         public TReturnType Resolve(IResolveFieldContext context)
@@ -100,10 +98,16 @@ namespace SER.Graphql.Reflection.NetCore
             return (TReturnType)context.Source;
         }
 
-        object IFieldResolver.Resolve(IResolveFieldContext context) => Resolve(context);
+        public ValueTask<object> ResolveAsync(IResolveFieldContext context)
+        {
+            //return context.Source;
+            throw new NotImplementedException();
+        }
+
+        //object IFieldResolver.ResolveAsync(IResolveFieldContext context) => Resolve(context);
     }
 
-    public class AppEventStreamResolver<T> : IEventStreamResolver<T>, IEventStreamResolver
+    public class AppEventStreamResolver<T> :  ISourceStreamResolver //IEventStreamResolver
         where T : class
     {
 
@@ -115,7 +119,9 @@ namespace SER.Graphql.Reflection.NetCore
             _httpContextAccessor = httpContextAccessor;
         }
 
-        public IObservable<T> Subscribe(IResolveEventStreamContext context)
+       
+
+        public IObservable<T> Subscribe(IResolveFieldContext context)
         {
 
             Console.WriteLine($" User --------------------------- IsAuthenticated {_httpContextAccessor.HttpContext.User?.Identity?.IsAuthenticated}");
@@ -151,7 +157,13 @@ namespace SER.Graphql.Reflection.NetCore
         }
 
 
-        IObservable<object> IEventStreamResolver.Subscribe(IResolveEventStreamContext context) => Subscribe(context);
+        public ValueTask<IObservable<object>> ResolveAsync(IResolveFieldContext context)
+        {
+            //return Subscribe(context);
+            throw new NotImplementedException();
+        }
+        //IObservable<object> IEventStreamResolver.Subscribe(IResolveEventStreamContext context) => Subscribe(context);
+        //IObservable<object> ISourceStreamResolver.ResolveAsync(IResolveFieldContext context) => Subscribe(context);
     }
 }
 

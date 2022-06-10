@@ -5,7 +5,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Globalization;
-using GraphQL.Language.AST;
+using GraphQLParser.AST;
+using GraphQLParser;
 
 namespace SER.Graphql.Reflection.NetCore.CustomScalar
 {
@@ -26,10 +27,10 @@ namespace SER.Graphql.Reflection.NetCore.CustomScalar
         }
 
         /// <inheritdoc/>
-        public override object ParseLiteral(IValue value) => value switch
+        public override object ParseLiteral(GraphQLValue value) => value switch
         {
-            StringValue stringValue => ParseDate(stringValue.Value),
-            NullValue _ => null,
+            GraphQLStringValue stringValue => ParseDate(stringValue.Value),
+            GraphQLNullValue _ => null,
             _ => ThrowLiteralConversionError(value)
         };
 
@@ -42,7 +43,7 @@ namespace SER.Graphql.Reflection.NetCore.CustomScalar
             _ => ThrowValueConversionError(value)
         };
 
-        private static DateTime ParseDate(string stringValue)
+        private static DateTime ParseDate(ROM stringValue)
         {
             // ISO-8601 format
             // Note that the "O" format is similar but always prints the fractional parts

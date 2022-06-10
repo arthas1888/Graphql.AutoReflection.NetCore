@@ -31,7 +31,7 @@ namespace SER.Graphql.Reflection.NetCore.Custom
             var rules = app.ApplicationServices.GetServices<IValidationRule>();
             settings.ValidationRules.AddRange(rules);
 
-            app.UseMiddleware<GraphQLHttpMiddleware<ISchema>>(new PathString("/api/graphql/v1"), settings);
+            app.UseMiddleware<GraphQLHttpMiddleware<ISchema>>(new PathString("/api/graphql/v1"));
         }
     }
 

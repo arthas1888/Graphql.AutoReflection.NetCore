@@ -24,7 +24,7 @@ namespace SER.Graphql.Reflection.NetCore.Permissions
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IConfiguration _config;
         private readonly IOptionsMonitor<SERGraphQlOptions> _optionsDelegate;
-        
+
 
         public AuthenticationListener(IHttpContextAccessor contextAccessor, IConfiguration config, IOptionsMonitor<SERGraphQlOptions> optionsDelegate)
         {
@@ -73,7 +73,7 @@ namespace SER.Graphql.Reflection.NetCore.Permissions
             if (context.Message.Type == MessageType.GQL_CONNECTION_INIT)
             {
                 var payload = context.Message.Payload as JObject;
-                if (payload != null && payload.ContainsKey("Authorization"))
+                if (payload != null && payload.TryGetValue("Authorization", StringComparison.CurrentCulture, out JToken token))
                 {
                     var auth = payload.Value<string>("Authorization");
                     // Save the user to the http context

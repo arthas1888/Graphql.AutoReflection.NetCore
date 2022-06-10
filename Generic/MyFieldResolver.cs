@@ -1,5 +1,4 @@
 ﻿using GraphQL;
-using GraphQL.Language.AST;
 using GraphQL.Resolvers;
 using GraphQL.Types;
 using GraphQL.Validation;
@@ -14,10 +13,12 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using SER.Graphql.Reflection.NetCore.Builder;
 using System.Text.Json;
+using GraphQLParser.AST;
+using System.Threading.Tasks;
 
 namespace SER.Graphql.Reflection.NetCore.Generic
 {
-    public interface ISERFieldResolver<TUser, TRole, TUserRole> : IFieldResolver 
+    public interface ISERFieldResolver<TUser, TRole, TUserRole> : IFieldResolver
         where TUser : class
         where TRole : class
         where TUserRole : class
@@ -43,98 +44,127 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             _logger = _httpContextAccessor.HttpContext.RequestServices.GetService<ILogger<MyFieldResolver<TUser, TRole, TUserRole>>>();
         }
 
-        public object Resolve(IResolveFieldContext context)
+        public ValueTask<object> ResolveAsync(IResolveFieldContext context)
         {
             Type type = context.FieldDefinition.ResolvedType.GetType();
-            if (context.FieldAst.Name.Contains("_list"))
+            if (context.FieldAst.Name.StringValue.Contains("_list"))
                 type = ((dynamic)context.FieldDefinition.ResolvedType).ResolvedType.GetType();
 
-            if(type.GenericTypeArguments.Length > 0)
+            if (type.GenericTypeArguments.Length > 0)
                 type = type.GetGenericArguments()[0];
 
             Type graphRepositoryType = typeof(IGraphRepository<>).MakeGenericType(new Type[] { type });
 
             dynamic service = _httpContextAccessor.HttpContext.RequestServices.GetService(graphRepositoryType);
-            var alias = string.IsNullOrEmpty(context.FieldAst.Alias) ? context.FieldAst.Name : context.FieldAst.Alias;
+            var alias = string.IsNullOrEmpty(context.FieldAst.Alias?.Name?.StringValue) ? context.FieldAst.Name.StringValue : context.FieldAst.Alias.Name.StringValue;
             var whereArgs = new StringBuilder();
             var args = new List<object>();
             var includes = new List<string>();
 
-            //Console.WriteLine($" ----------------------- alias {alias} Name {context.FieldAst.Name} type {type}");
+            Console.WriteLine($" ----------------------- alias {alias} Name {context.FieldAst.Name.StringValue} type {type}");
 
             try
             {
-                //var listFieldType = ((dynamic)context.FieldDefinition.ResolvedType).ResolvedType.Fields;
 
-                if (context.FieldAst.Name.Contains("_list"))
+                if (context.FieldAst.Name.StringValue.Contains("_list"))
                 {
-                    GraphUtils.DetectChild<TUser, TRole, TUserRole>(context.FieldAst.SelectionSet.Selections, includes,
+                    //var listFieldType = ((dynamic)context.FieldDefinition.ResolvedType).ResolvedType.Fields;
+
+                    Console.WriteLine($"SubFields \n {JsonSerializer.Serialize(context.SubFields)}");
+                    Console.WriteLine($"Variables \n {JsonSerializer.Serialize(context.Variables)}");
+                    //Console.WriteLine($"Arguments \n {JsonSerializer.Serialize(context.Arguments)}");
+                    Console.WriteLine($"Directives \n {JsonSerializer.Serialize(context.FieldAst.Directives)}");
+                    Console.WriteLine($"Source \n {JsonSerializer.Serialize(context.Source)}");
+                    Console.WriteLine($"Location \n {JsonSerializer.Serialize(context.FieldAst.Location)}");
+                    Console.WriteLine($"ArrayPool \n {JsonSerializer.Serialize(context.ArrayPool)}");
+                    Console.WriteLine($"Directives \n {JsonSerializer.Serialize(context.Directives)}");
+
+                   
+                    //Console.WriteLine($"FieldAst \n " +
+                    //    $"{Newtonsoft.Json.JsonConvert.SerializeObject(context.FieldAst, Newtonsoft.Json.Formatting.Indented)} \n \n");
+
+                    if (context.FieldAst.Arguments != null)
+                    {
+                        foreach (var field in context.FieldAst.Arguments)
+                        {
+                            Console.WriteLine($"argument {field.Name.StringValue} value {context.GetArgument<object>(field.Name.StringValue) }");
+                        }
+                    }
+
+                    GraphUtils.DetectChild<TUser, TRole, TUserRole>(context, context.FieldAst.SelectionSet.Selections.Where(x => x is GraphQLField)
+                        .Select(x => x as GraphQLField).ToList(), includes,
                         ((dynamic)context.FieldDefinition.ResolvedType).ResolvedType, args, whereArgs,
                         arguments: context.Arguments, mainType: type);
                     Console.WriteLine($"whereArgs list: {whereArgs} args {string.Join(", ", args)}");
 
-                    return service
+                    return new ValueTask<object>(service
                         .GetAllAsync(alias, whereArgs: whereArgs.ToString(),
                             take: context.GetArgument<int?>("first"), offset: context.GetArgument<int?>("page"),
                             orderBy: context.GetArgument<string>("orderBy"),
                             includeExpressions: includes, args: args.ToArray())
-                        .Result;
+                        .Result);
                 }
-                else if (context.FieldAst.Name.Contains("_count"))
+                else if (context.FieldAst.Name.StringValue.Contains("_count"))
                 {
-                    GraphUtils.DetectChild<TUser, TRole, TUserRole>(context.FieldAst.SelectionSet.Selections, includes,
-                        context.FieldDefinition.ResolvedType, args, whereArgs,
-                        arguments: context.Arguments, mainType: type);
-                    Console.WriteLine($"whereArgs count: {whereArgs}");
+                    //GraphUtils.DetectChild<TUser, TRole, TUserRole>(context.FieldAst.SelectionSet.Selections, includes,
+                    //    context.FieldDefinition.ResolvedType, args, whereArgs,
+                    //    arguments: context.Arguments, mainType: type);
+                    //Console.WriteLine($"whereArgs count: {whereArgs}");
 
-                    return service.GetCountQuery(whereArgs: whereArgs.ToString(),
-                        includeExpressions: includes, args: args.ToArray());
+                    //return service.GetCountQuery(whereArgs: whereArgs.ToString(),
+                    //    includeExpressions: includes, args: args.ToArray());
+
+                    return new ValueTask<object>(null);
                 }
-                else if (context.FieldAst.Name.Contains("_sum"))
+                else if (context.FieldAst.Name.StringValue.Contains("_sum"))
                 {
-                    GraphUtils.DetectChild<TUser, TRole, TUserRole>(context.FieldAst.SelectionSet.Selections, includes,
-                        context.FieldDefinition.ResolvedType, args, whereArgs,
-                        arguments: context.Arguments, mainType: type);
-                    string param = "";
-                    Console.WriteLine($"whereArgs sum: {whereArgs}");
-                    if (context.FieldAst.SelectionSet.Selections != null)
-                    {
-                        foreach (Field field in context.FieldAst.SelectionSet.Selections)
-                        {
-                            //Console.WriteLine($"name {field.Name}");
-                            param = field.Name;
-                            context.FieldAst.SelectionSet.Selections.Remove(field);
-                            break;
-                        }
-                    }
+                    //GraphUtils.DetectChild<TUser, TRole, TUserRole>(context.FieldAst.SelectionSet.Selections, includes,
+                    //    context.FieldDefinition.ResolvedType, args, whereArgs,
+                    //    arguments: context.Arguments, mainType: type);
+                    //string param = "";
+                    //Console.WriteLine($"whereArgs sum: {whereArgs}");
+                    //if (context.FieldAst.SelectionSet.Selections != null)
+                    //{
+                    //    foreach (var field in context.FieldAst.SelectionSet.Selections)
+                    //    {
+                    //        //Console.WriteLine($"name {field.Name}");
+                    //        //param = field.;
+                    //        context.FieldAst.SelectionSet.Selections.Remove(field);
+                    //        break;
+                    //    }
+                    //}
 
-                    if (param == null)
-                    {
-                        GetError(context);
-                        return null;
-                    }
+                    //if (param == null)
+                    //{
+                    //    GetError(context);
+                    //    return new ValueTask<object>(null);
+                    //}
 
-                    return service.GetSumQuery(param: param, whereArgs: whereArgs.ToString(), includeExpressions: includes, args: args.ToArray());
+                    //return service.GetSumQuery(param: param, whereArgs: whereArgs.ToString(), includeExpressions: includes, args: args.ToArray());
+
+                    return new ValueTask<object>(null);
                 }
                 else
                 {
-                    var id = context.GetArgument<dynamic>("id");
-                    GraphUtils.DetectChild<TUser, TRole, TUserRole>(context.FieldAst.SelectionSet.Selections, includes,
-                        context.FieldDefinition.ResolvedType, args, whereArgs,
-                        arguments: context.Arguments, mainType: type);
-                    Console.WriteLine($"whereArgs single obj: {whereArgs}");
+                    //var id = context.GetArgument<dynamic>("id");
+                    //GraphUtils.DetectChild<TUser, TRole, TUserRole>(context.FieldAst.SelectionSet.Selections, includes,
+                    //    context.FieldDefinition.ResolvedType, args, whereArgs,
+                    //    arguments: context.Arguments, mainType: type);
+                    //Console.WriteLine($"whereArgs single obj: {whereArgs}");
 
-                    var dbEntity = service
-                        .GetByIdAsync(alias, id, whereArgs: whereArgs.ToString(),
-                            includeExpressions: includes, args: args.ToArray())
-                        .Result;
+                    //var dbEntity = service
+                    //    .GetByIdAsync(alias, id, whereArgs: whereArgs.ToString(),
+                    //        includeExpressions: includes, args: args.ToArray())
+                    //    .Result;
 
-                    if (dbEntity == null)
-                    {
-                        GetError(context);
-                        return null;
-                    }
-                    return dbEntity;
+                    //if (dbEntity == null)
+                    //{
+                    //    GetError(context);
+                    //    return new ValueTask<object>(null);
+                    //}
+                    //return dbEntity;
+
+                    return new ValueTask<object>(null);
                 }
             }
             catch (Exception e)
@@ -142,17 +172,17 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                 _logger.LogError(e.ToString());
                 var error = new ExecutionError(e.Message, e);
                 context.Errors.Add(error);
-                return null;
+                return new ValueTask<object>(null);
             }
 
         }
 
         private void GetError(IResolveFieldContext context)
         {
-            var error = new ValidationError(context.Document.OriginalQuery,
+            var error = new ValidationError(context.Document.Source,
                 "not-found",
                 "Couldn't find entity in db.",
-                new INode[] { context.FieldAst });
+                new ASTNode[] { context.FieldAst });
             context.Errors.Add(error);
         }
 
@@ -160,6 +190,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                 .GetMethod("GetListHelper")
                 .MakeGenericMethod(type)
                 .Invoke(this, null) as IQueryable;
+
 
     }
 }

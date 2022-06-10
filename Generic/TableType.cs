@@ -17,6 +17,7 @@ using Microsoft.Extensions.Options;
 using SER.Graphql.Reflection.NetCore.Builder;
 using SER.Models;
 using SER.Graphql.Reflection.NetCore.CustomScalar;
+using System.Threading.Tasks;
 
 namespace SER.Graphql.Reflection.NetCore
 {
@@ -733,12 +734,12 @@ namespace SER.Graphql.Reflection.NetCore
             _fieldName = fieldName;
         }
 
-        public object Resolve(IResolveFieldContext context)
+        public ValueTask<object> ResolveAsync(IResolveFieldContext context)
         {
             var pi = _typeField.GetProperty(_fieldName);
             var value = pi.GetValue(context.Source);
-            if (value == null) return null;
-            return ((TimeSpan)value).ToString();
+            if (value == null) return new ValueTask<object>(null);
+            return new ValueTask<object>(((TimeSpan)value).ToString());
         }
 
     }
@@ -754,14 +755,13 @@ namespace SER.Graphql.Reflection.NetCore
             _fieldName = fieldName;
         }
 
-        public object Resolve(IResolveFieldContext context)
+        public ValueTask<object> ResolveAsync(IResolveFieldContext context)
         {
             var pi = _typeField.GetProperty(_fieldName);
             dynamic value = pi.GetValue(context.Source);
-            if (value == null) return null;
-            return System.Text.Json.JsonSerializer.Serialize(value);
+            if (value == null) return new ValueTask<object>(null);
+            return new ValueTask<object>(System.Text.Json.JsonSerializer.Serialize(value));
         }
-
     }
 
     public class EnumResolver : IFieldResolver
@@ -775,13 +775,12 @@ namespace SER.Graphql.Reflection.NetCore
             _fieldName = fieldName;
         }
 
-        public object Resolve(IResolveFieldContext context)
+        public ValueTask<object> ResolveAsync(IResolveFieldContext context)
         {
             var pi = _typeField.GetProperty(_fieldName);
             var value = pi.GetValue(context.Source);
-            if (value == null) return null;
-            return (int)value;
+            if (value == null) return new ValueTask<object>(null);
+            return new ValueTask<object>((int)value);
         }
-
     }
 }
