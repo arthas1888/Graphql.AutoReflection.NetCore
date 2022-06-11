@@ -81,18 +81,20 @@ namespace SER.Graphql.Reflection.NetCore.Permissions
                 return default;
             }
 
-            public override ValueTask VisitAsync(ASTNode? node, FragmentBelongsToOperationVisitorContext context)
+            public override ValueTask VisitAsync(ASTNode node, FragmentBelongsToOperationVisitorContext context)
             {
                 return context.Found ? default : base.VisitAsync(node, context);
             }
         }
 
         /// <inheritdoc />
-        public async ValueTask<INodeVisitor?> ValidateAsync(ValidationContext context)
+        public async ValueTask<INodeVisitor> ValidateAsync(ValidationContext context)
         {
             var userContext = context.UserContext as IProvideClaimsPrincipal;
             await AuthorizeAsync(null, context.Schema, userContext, context, null);
             var operationType = OperationType.Query;
+
+            //Console.WriteLine($" ---------------- userContext : {userContext?.User?.Identity?.Name} --------------- ");
 
             // this could leak info about hidden fields or types in error messages
             // it would be better to implement a filter on the Schema so it
@@ -164,9 +166,9 @@ namespace SER.Graphql.Reflection.NetCore.Permissions
 
 
         private async Task AuthorizeAsync(
-            ASTNode? node,
-            IProvideMetadata? provider,
-            IProvideClaimsPrincipal? userContext,
+            ASTNode node,
+            IProvideMetadata provider,
+            IProvideClaimsPrincipal userContext,
             ValidationContext context,
             OperationType? operationType)
         {
@@ -183,7 +185,7 @@ namespace SER.Graphql.Reflection.NetCore.Permissions
             context.ReportError(new ValidationError(
                 context.Document.Source,
                 "authorization",
-                $"You are not authorized to run this {operationType.ToString().ToLower()}.\n{errors}",
+                $"You are not authorized to run this {operationType?.ToString().ToLower()}.\n{errors}",
                 node == null ? Array.Empty<ASTNode>() : new ASTNode[] { node }));
         }
     }

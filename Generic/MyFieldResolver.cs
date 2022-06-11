@@ -15,6 +15,7 @@ using SER.Graphql.Reflection.NetCore.Builder;
 using System.Text.Json;
 using GraphQLParser.AST;
 using System.Threading.Tasks;
+using GraphQLParser;
 
 namespace SER.Graphql.Reflection.NetCore.Generic
 {
@@ -44,7 +45,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             _logger = _httpContextAccessor.HttpContext.RequestServices.GetService<ILogger<MyFieldResolver<TUser, TRole, TUserRole>>>();
         }
 
-        public ValueTask<object> ResolveAsync(IResolveFieldContext context)
+        public object Resolve(IResolveFieldContext context)
         {
             Type type = context.FieldDefinition.ResolvedType.GetType();
             if (context.FieldAst.Name.StringValue.Contains("_list"))
@@ -61,7 +62,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             var args = new List<object>();
             var includes = new List<string>();
 
-            Console.WriteLine($" ----------------------- alias {alias} Name {context.FieldAst.Name.StringValue} type {type}");
+            //Console.WriteLine($" ----------------------- alias {alias} Name {context.FieldAst.Name.StringValue} type {type}");
 
             try
             {
@@ -70,101 +71,79 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                 {
                     //var listFieldType = ((dynamic)context.FieldDefinition.ResolvedType).ResolvedType.Fields;
 
-                    Console.WriteLine($"SubFields \n {JsonSerializer.Serialize(context.SubFields)}");
-                    Console.WriteLine($"Variables \n {JsonSerializer.Serialize(context.Variables)}");
-                    //Console.WriteLine($"Arguments \n {JsonSerializer.Serialize(context.Arguments)}");
-                    Console.WriteLine($"Directives \n {JsonSerializer.Serialize(context.FieldAst.Directives)}");
-                    Console.WriteLine($"Source \n {JsonSerializer.Serialize(context.Source)}");
-                    Console.WriteLine($"Location \n {JsonSerializer.Serialize(context.FieldAst.Location)}");
-                    Console.WriteLine($"ArrayPool \n {JsonSerializer.Serialize(context.ArrayPool)}");
-                    Console.WriteLine($"Directives \n {JsonSerializer.Serialize(context.Directives)}");
-
-                   
-                    //Console.WriteLine($"FieldAst \n " +
-                    //    $"{Newtonsoft.Json.JsonConvert.SerializeObject(context.FieldAst, Newtonsoft.Json.Formatting.Indented)} \n \n");
-
-                    if (context.FieldAst.Arguments != null)
-                    {
-                        foreach (var field in context.FieldAst.Arguments)
-                        {
-                            Console.WriteLine($"argument {field.Name.StringValue} value {context.GetArgument<object>(field.Name.StringValue) }");
-                        }
-                    }
-
-                    GraphUtils.DetectChild<TUser, TRole, TUserRole>(context, context.FieldAst.SelectionSet.Selections.Where(x => x is GraphQLField)
+                    GraphUtils.DetectChild<TUser, TRole, TUserRole>(context.FieldAst.SelectionSet.Selections.Where(x => x is GraphQLField)
                         .Select(x => x as GraphQLField).ToList(), includes,
                         ((dynamic)context.FieldDefinition.ResolvedType).ResolvedType, args, whereArgs,
                         arguments: context.Arguments, mainType: type);
                     Console.WriteLine($"whereArgs list: {whereArgs} args {string.Join(", ", args)}");
 
-                    return new ValueTask<object>(service
+                    return service
                         .GetAllAsync(alias, whereArgs: whereArgs.ToString(),
-                            take: context.GetArgument<int?>("first"), offset: context.GetArgument<int?>("page"),
+                            take: GetRealValue(context.GetArgument<dynamic>("first")), offset: GetRealValue(context.GetArgument<dynamic>("page")),
                             orderBy: context.GetArgument<string>("orderBy"),
                             includeExpressions: includes, args: args.ToArray())
-                        .Result);
+                        .Result;
                 }
                 else if (context.FieldAst.Name.StringValue.Contains("_count"))
                 {
-                    //GraphUtils.DetectChild<TUser, TRole, TUserRole>(context.FieldAst.SelectionSet.Selections, includes,
-                    //    context.FieldDefinition.ResolvedType, args, whereArgs,
-                    //    arguments: context.Arguments, mainType: type);
-                    //Console.WriteLine($"whereArgs count: {whereArgs}");
+                    GraphUtils.DetectChild<TUser, TRole, TUserRole>(context.FieldAst.SelectionSet.Selections.Where(x => x is GraphQLField)
+                        .Select(x => x as GraphQLField).ToList(), includes,
+                        context.FieldDefinition.ResolvedType, args, whereArgs,
+                        arguments: context.Arguments, mainType: type);
+                    Console.WriteLine($"whereArgs count: {whereArgs}");
 
-                    //return service.GetCountQuery(whereArgs: whereArgs.ToString(),
-                    //    includeExpressions: includes, args: args.ToArray());
-
-                    return new ValueTask<object>(null);
+                    return service.GetCountQuery(whereArgs: whereArgs.ToString(),
+                        includeExpressions: includes, args: args.ToArray());
                 }
                 else if (context.FieldAst.Name.StringValue.Contains("_sum"))
                 {
-                    //GraphUtils.DetectChild<TUser, TRole, TUserRole>(context.FieldAst.SelectionSet.Selections, includes,
-                    //    context.FieldDefinition.ResolvedType, args, whereArgs,
-                    //    arguments: context.Arguments, mainType: type);
-                    //string param = "";
-                    //Console.WriteLine($"whereArgs sum: {whereArgs}");
-                    //if (context.FieldAst.SelectionSet.Selections != null)
-                    //{
-                    //    foreach (var field in context.FieldAst.SelectionSet.Selections)
-                    //    {
-                    //        //Console.WriteLine($"name {field.Name}");
-                    //        //param = field.;
-                    //        context.FieldAst.SelectionSet.Selections.Remove(field);
-                    //        break;
-                    //    }
-                    //}
+                    GraphUtils.DetectChild<TUser, TRole, TUserRole>(context.FieldAst.SelectionSet.Selections.Where(x => x is GraphQLField)
+                        .Select(x => x as GraphQLField).ToList(), includes,
+                        context.FieldDefinition.ResolvedType, args, whereArgs,
+                        arguments: context.Arguments, mainType: type);
+                    string param = "";
+                    Console.WriteLine($"whereArgs sum: {whereArgs}");
+                    if (context.FieldAst.SelectionSet.Selections != null)
+                    {
+                        foreach (var field in context.FieldAst.SelectionSet.Selections.Where(x => x is GraphQLField)
+                            .Select(x => x as GraphQLField).ToList())
+                        {
+                            //Console.WriteLine($"name {field.Name}");
+                            param = field.Name.StringValue;
+                            context.FieldAst.SelectionSet.Selections.Remove(field);
+                            break;
+                        }
+                    }
 
-                    //if (param == null)
-                    //{
-                    //    GetError(context);
-                    //    return new ValueTask<object>(null);
-                    //}
+                    if (param == null)
+                    {
+                        GetError(context);
+                        return null;
+                    }
 
-                    //return service.GetSumQuery(param: param, whereArgs: whereArgs.ToString(), includeExpressions: includes, args: args.ToArray());
+                    return service.GetSumQuery(param: param, whereArgs: whereArgs.ToString(), includeExpressions: includes, args: args.ToArray());
 
-                    return new ValueTask<object>(null);
                 }
                 else
                 {
-                    //var id = context.GetArgument<dynamic>("id");
-                    //GraphUtils.DetectChild<TUser, TRole, TUserRole>(context.FieldAst.SelectionSet.Selections, includes,
-                    //    context.FieldDefinition.ResolvedType, args, whereArgs,
-                    //    arguments: context.Arguments, mainType: type);
-                    //Console.WriteLine($"whereArgs single obj: {whereArgs}");
+                    var id = context.GetArgument<dynamic>("id");
+                    GraphUtils.DetectChild<TUser, TRole, TUserRole>(context.FieldAst.SelectionSet.Selections.Where(x => x is GraphQLField)
+                        .Select(x => x as GraphQLField).ToList(), includes,
+                        context.FieldDefinition.ResolvedType, args, whereArgs,
+                        arguments: context.Arguments, mainType: type);
+                    Console.WriteLine($"whereArgs single obj: {whereArgs}");
 
-                    //var dbEntity = service
-                    //    .GetByIdAsync(alias, id, whereArgs: whereArgs.ToString(),
-                    //        includeExpressions: includes, args: args.ToArray())
-                    //    .Result;
+                    var dbEntity = service
+                        .GetByIdAsync(alias, id, whereArgs: whereArgs.ToString(),
+                            includeExpressions: includes, args: args.ToArray())
+                        .Result;
 
-                    //if (dbEntity == null)
-                    //{
-                    //    GetError(context);
-                    //    return new ValueTask<object>(null);
-                    //}
-                    //return dbEntity;
-
-                    return new ValueTask<object>(null);
+                    if (dbEntity == null)
+                    {
+                        GetError(context);
+                        return null;
+                    }
+                    return dbEntity;
                 }
             }
             catch (Exception e)
@@ -172,11 +151,34 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                 _logger.LogError(e.ToString());
                 var error = new ExecutionError(e.Message, e);
                 context.Errors.Add(error);
-                return new ValueTask<object>(null);
+                return null;
             }
 
         }
 
+        public ValueTask<object> ResolveAsync(IResolveFieldContext context) => new(Resolve(context));
+
+
+        /// <summary>
+        /// obtiene el valor verdadero de un campo tipo ROM
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        private static object GetRealValue(dynamic value)
+        {
+            if (value is ROM)
+            {
+                if (int.TryParse(value.ToString(), out int @int))
+                    return @int;
+                if (double.TryParse(value.ToString(), out double @double))
+                    return @double;
+                if (bool.TryParse(value.ToString(), out bool @bool))
+                    return @bool;
+                return value.ToString();
+            }
+            else return value;
+        }
+        
         private void GetError(IResolveFieldContext context)
         {
             var error = new ValidationError(context.Document.Source,

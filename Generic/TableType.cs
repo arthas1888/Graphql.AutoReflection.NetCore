@@ -734,13 +734,14 @@ namespace SER.Graphql.Reflection.NetCore
             _fieldName = fieldName;
         }
 
-        public ValueTask<object> ResolveAsync(IResolveFieldContext context)
+        public object Resolve(IResolveFieldContext context)
         {
             var pi = _typeField.GetProperty(_fieldName);
             var value = pi.GetValue(context.Source);
-            if (value == null) return new ValueTask<object>(null);
-            return new ValueTask<object>(((TimeSpan)value).ToString());
+            if (value == null) return null;
+            return ((TimeSpan)value).ToString();
         }
+        public ValueTask<object> ResolveAsync(IResolveFieldContext context) => new(Resolve(context));
 
     }
 
@@ -755,13 +756,16 @@ namespace SER.Graphql.Reflection.NetCore
             _fieldName = fieldName;
         }
 
-        public ValueTask<object> ResolveAsync(IResolveFieldContext context)
+        public object Resolve(IResolveFieldContext context)
         {
             var pi = _typeField.GetProperty(_fieldName);
             dynamic value = pi.GetValue(context.Source);
-            if (value == null) return new ValueTask<object>(null);
-            return new ValueTask<object>(System.Text.Json.JsonSerializer.Serialize(value));
+            if (value == null) return null;
+            return System.Text.Json.JsonSerializer.Serialize(value);
         }
+
+        public ValueTask<object> ResolveAsync(IResolveFieldContext context) => new(Resolve(context));
+        
     }
 
     public class EnumResolver : IFieldResolver
@@ -775,12 +779,15 @@ namespace SER.Graphql.Reflection.NetCore
             _fieldName = fieldName;
         }
 
-        public ValueTask<object> ResolveAsync(IResolveFieldContext context)
+        public object Resolve(IResolveFieldContext context)
         {
             var pi = _typeField.GetProperty(_fieldName);
             var value = pi.GetValue(context.Source);
-            if (value == null) return new ValueTask<object>(null);
-            return new ValueTask<object>((int)value);
+            if (value == null) return null;
+            return (int)value;
         }
+
+        public ValueTask<object> ResolveAsync(IResolveFieldContext context) => new(Resolve(context));
+
     }
 }

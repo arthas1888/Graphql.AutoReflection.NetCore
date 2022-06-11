@@ -179,8 +179,10 @@ namespace SER.Graphql.Reflection.NetCore.Custom
                 ? new Dictionary<string, object>() // in order to allow resolvers to exchange their state through this object
                 : await userContextBuilder.BuildUserContext(context);
 
+            var rules = context.RequestServices.GetServices<IValidationRule>();
+
             var executer = context.RequestServices.GetRequiredService<IDocumentExecuter<TSchema>>();
-            await HandleRequestAsync(context, _next, userContext, bodyGQLBatchRequest, gqlRequest, executer, cancellationToken);
+            await HandleRequestAsync(context, _next, userContext, bodyGQLBatchRequest, gqlRequest, executer, rules, cancellationToken);
 
         }
 
@@ -191,6 +193,7 @@ namespace SER.Graphql.Reflection.NetCore.Custom
         IList<GraphQLRequest> bodyGQLBatchRequest,
         GraphQLRequest gqlRequest,
         IDocumentExecuter<TSchema> executer,
+        IEnumerable<IValidationRule> rules,
         CancellationToken cancellationToken)
         {
             // Normal execution with single graphql request
@@ -198,7 +201,7 @@ namespace SER.Graphql.Reflection.NetCore.Custom
             {
                 var stopwatch = ValueStopwatch.StartNew();
                 await RequestExecutingAsync(gqlRequest);
-                var result = await ExecuteRequestAsync(gqlRequest, userContext, executer, context.RequestServices, cancellationToken);
+                var result = await ExecuteRequestAsync(gqlRequest, userContext, executer, context.RequestServices, rules, cancellationToken);
 
                 await RequestExecutedAsync(new GraphQLRequestExecutionResult(gqlRequest, result, stopwatch.Elapsed));
 
@@ -214,7 +217,7 @@ namespace SER.Graphql.Reflection.NetCore.Custom
 
                     var stopwatch = ValueStopwatch.StartNew();
                     await RequestExecutingAsync(gqlRequestInBatch, i);
-                    var result = await ExecuteRequestAsync(gqlRequestInBatch, userContext, executer, context.RequestServices, cancellationToken);
+                    var result = await ExecuteRequestAsync(gqlRequestInBatch, userContext, executer, context.RequestServices, rules, cancellationToken);
 
                     await RequestExecutedAsync(new GraphQLRequestExecutionResult(gqlRequestInBatch, result, stopwatch.Elapsed, i));
 
@@ -249,6 +252,7 @@ namespace SER.Graphql.Reflection.NetCore.Custom
             IDictionary<string, object> userContext,
             IDocumentExecuter<TSchema> executer,
             IServiceProvider requestServices,
+            IEnumerable<IValidationRule> rules,
             CancellationToken token)
         => executer.ExecuteAsync(new ExecutionOptions
         {
@@ -258,7 +262,8 @@ namespace SER.Graphql.Reflection.NetCore.Custom
             Extensions = gqlRequest.Extensions,
             UserContext = userContext,
             RequestServices = requestServices,
-            CancellationToken = token
+            CancellationToken = token,
+            ValidationRules = rules,
         });
 
         protected virtual CancellationToken GetCancellationToken(HttpContext context) => context.RequestAborted;
@@ -284,87 +289,57 @@ namespace SER.Graphql.Reflection.NetCore.Custom
                     new ExecutionError(errorMessage)
                 }
             };
-
             context.Response.ContentType = "application/json";
             context.Response.StatusCode = (int)httpStatusCode;
             if ((int)httpStatusCode == 400)
                 _logger.LogError($"_______________________________EEEEEEEEEEEEEEEEEEEEEErrrrrrrrrrrrrrrrrrrrrrrrrr {errorMessage}");
 
+            //if (!string.IsNullOrEmpty(errorMessage) && errorMessage.Equals("The operation was canceled."))
+            //    return;
+
             await _serializer.WriteAsync(context.Response.Body, result, GetCancellationToken(context));
         }
 
-        private async Task WriteErrorResponseAsync(HttpContext context,
-           ExecutionResult result, int httpStatusCode = 400 /* BadRequest */)
-        {
-            var forbiddenCode = "auth-required";
-            var authorizationCode = "authorization";
-            var notFoundCode = "not-found";
-
-            context.Response.ContentType = "application/json";
-            context.Response.StatusCode = result.Errors?.Any(er => (er as ValidationError)?.Code == authorizationCode || (er as ValidationError)?.Number == authorizationCode) == true
-                ? (int)HttpStatusCode.Unauthorized
-                : result.Errors?.Any(er => (er as ValidationError)?.Code == forbiddenCode || (er as ValidationError)?.Number == forbiddenCode) == true ?
-                (int)HttpStatusCode.Forbidden
-                : result.Errors?.Any(er => (er as ValidationError)?.Code == notFoundCode || (er as ValidationError)?.Number == notFoundCode) == true ?
-                (int)HttpStatusCode.NotFound
-                : httpStatusCode;
-
-            var errors = new ExecutionErrors();
-            var msg = "";
-            foreach (var error in result.Errors)
-            {
-                msg = error.Message;
-                Console.WriteLine($"_______________________________EEEEEEEEEEEEEEEEEEEEEErrrrrrrrrrrrrrrrrrrrrrrrrr {error} httpStatusCode {context.Response.StatusCode}");
-                if (context.Response.StatusCode == 400)
-                    _logger.LogError($"_______________________________EEEEEEEEEEEEEEEEEEEEEErrrrrrrrrrrrrrrrrrrrrrrrrr {error}\nquery {result.Query}");
-
-                var ex = new ExecutionError(error.Message);
-                if (error.InnerException != null)
-                {
-                    ex = new ExecutionError(error.InnerException.Message, error.InnerException);
-                }
-                errors.Add(ex);
-            }
-            if (!string.IsNullOrEmpty(msg) && msg.Equals("The operation was canceled."))
-                return;
-
-            result.Errors.AddRange(errors);
-            try
-            {
-                await _serializer.WriteAsync(context.Response.Body, result);
-            }
-            catch (JsonException e)
-            {
-                _logger.LogError($"_______________________________JsonException {e}");
-            }
-        }
 
         protected virtual Task WriteResponseAsync<TResult>(HttpResponse httpResponse, IGraphQLSerializer serializer, CancellationToken cancellationToken, TResult result)
-        {            
+        {
             httpResponse.ContentType = "application/json";
             httpResponse.StatusCode = result is not ExecutionResult executionResult || executionResult.Executed ? 200 : 400; // BadRequest when fails validation; OK otherwise
 
             if (_fillDataExtensions.GetAll().Count > 0 && result is ExecutionResult)
                 (result as ExecutionResult).Extensions = _fillDataExtensions.GetAll().ToDictionary(entry => entry.Key, entry => entry.Value);
-            
-            if (httpResponse.StatusCode == (int)HttpStatusCode.BadRequest)
-                _logger.LogError($"_______________________________ Error Graph request {string.Join(", ", (result as ExecutionResult).Errors.Select(x => x.Message).ToList())} \nquery {(result as ExecutionResult).Query}");
 
+            if (httpResponse.StatusCode == (int)HttpStatusCode.BadRequest)
+                _logger.LogError($"_______________________________ Error Graph request {string.Join(", ", (result as ExecutionResult).Errors.Select(x => x.Message).ToList())} ");
+
+            var forbiddenCode = "auth-required";
+            var authorizationCode = "authorization";
+            var notFoundCode = "not-found";
+
+            var errors = new ExecutionErrors();
+            if (result is ExecutionResult)
+            {
+                httpResponse.StatusCode = (result as ExecutionResult).Errors?.Any(er => (er as ValidationError)?.Code == authorizationCode || (er as ValidationError)?.Number == authorizationCode) == true
+                    ? (int)HttpStatusCode.Unauthorized
+                    : (result as ExecutionResult).Errors?.Any(er => (er as ValidationError)?.Code == forbiddenCode || (er as ValidationError)?.Number == forbiddenCode) == true ?
+                    (int)HttpStatusCode.Forbidden
+                    : (result as ExecutionResult).Errors?.Any(er => (er as ValidationError)?.Code == notFoundCode || (er as ValidationError)?.Number == notFoundCode) == true ?
+                    (int)HttpStatusCode.NotFound
+                    : httpResponse.StatusCode;
+
+                if ((result as ExecutionResult).Errors != null)
+                    foreach (var error in (result as ExecutionResult).Errors)
+                    {
+                        var ex = new ExecutionError(error.Message);
+                        if (error.InnerException != null)
+                            ex = new ExecutionError(error.InnerException.Message, error.InnerException);
+                        errors.Add(ex);
+                    }
+                if (errors.Count > 0) (result as ExecutionResult).Errors?.AddRange(errors);
+            }
 
             return serializer.WriteAsync(httpResponse.Body, result, cancellationToken);
         }
-
-        //private Task WriteResponseAsync<TResult>(HttpContext context, TResult result)
-        //{
-        //    if (result is ExecutionResult && _fillDataExtensions.GetAll().Count > 0)
-        //        (result as ExecutionResult).Extensions = _fillDataExtensions.GetAll();
-        //    /*var mediaType = new MediaTypeHeaderValue("application/json");
-        //    mediaType.CharSet = "utf-8";*/
-        //    context.Response.ContentType = "application/json"; // mediaType.ToString(); //
-        //    context.Response.StatusCode = 200; // OK
-
-        //    return _writer.WriteAsync(context.Response.Body, result);
-        //}
 
         private const string QUERY_KEY = "query";
         private const string VARIABLES_KEY = "variables";

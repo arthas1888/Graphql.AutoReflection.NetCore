@@ -98,16 +98,10 @@ namespace SER.Graphql.Reflection.NetCore
             return (TReturnType)context.Source;
         }
 
-        public ValueTask<object> ResolveAsync(IResolveFieldContext context)
-        {
-            //return context.Source;
-            throw new NotImplementedException();
-        }
-
-        //object IFieldResolver.ResolveAsync(IResolveFieldContext context) => Resolve(context);
+        public ValueTask<object> ResolveAsync(IResolveFieldContext context) => new(Resolve(context));
     }
 
-    public class AppEventStreamResolver<T> :  ISourceStreamResolver //IEventStreamResolver
+    public class AppEventStreamResolver<T> : ISourceStreamResolver //IEventStreamResolver
         where T : class
     {
 
@@ -119,7 +113,7 @@ namespace SER.Graphql.Reflection.NetCore
             _httpContextAccessor = httpContextAccessor;
         }
 
-       
+
 
         public IObservable<T> Subscribe(IResolveFieldContext context)
         {
@@ -129,7 +123,8 @@ namespace SER.Graphql.Reflection.NetCore
             if (_httpContextAccessor.HttpContext.User?.Identity == null || !_httpContextAccessor.HttpContext.User.Identity.IsAuthenticated)
             {
                 context.Errors.Add(new ExecutionError($"Missing Bearer Token"));
-                return new List<T>().ToObservable();
+                var res = new List<T>().ToObservable();
+                return res;
             }
 
             string field = context.GetArgument<string>("field");
@@ -157,12 +152,8 @@ namespace SER.Graphql.Reflection.NetCore
         }
 
 
-        public ValueTask<IObservable<object>> ResolveAsync(IResolveFieldContext context)
-        {
-            //return Subscribe(context);
-            throw new NotImplementedException();
-        }
-        //IObservable<object> IEventStreamResolver.Subscribe(IResolveEventStreamContext context) => Subscribe(context);
+
+        ValueTask<IObservable<object>> ISourceStreamResolver.ResolveAsync(IResolveFieldContext context) => new(Subscribe(context));
         //IObservable<object> ISourceStreamResolver.ResolveAsync(IResolveFieldContext context) => Subscribe(context);
     }
 }

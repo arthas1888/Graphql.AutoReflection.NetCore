@@ -231,7 +231,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                 expresion.Append(")");
         }
 
-        public static void DetectChild<TUser, TRole, TUserRole>(IResolveFieldContext context, List<GraphQLField> selections, List<string> includes, dynamic resolvedType, List<object> args,
+        public static void DetectChild<TUser, TRole, TUserRole>(List<GraphQLField> selections, List<string> includes, dynamic resolvedType, List<object> args,
             StringBuilder whereArgs, string mainModel = "", IDictionary<string, ArgumentValue> arguments = null, Type mainType = null)
             where TUser : class
             where TRole : class
@@ -260,7 +260,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                         }
                         else
                         {
-                            Console.WriteLine($" ************************ name {argument.Key} Value {argument.Value.Value} {argument.Value.Value.GetType()}");
+                            //Console.WriteLine($" ************************ name {argument.Key} Value {argument.Value.Value} {argument.Value.Value.GetType()}");
                             FilterArguments<TUser, TRole, TUserRole>(argument.Key, GetRealValue((dynamic)argument.Value.Value), type, i, args, whereArgs);
                             i++;
                         }
@@ -271,7 +271,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             {
                 foreach (GraphQLField field in selections)
                 {
-                    Console.WriteLine($"name {field.Name}");
+                    //Console.WriteLine($"name {field.Name}");
                     if (field.SelectionSet != null && field.SelectionSet.Selections.Count > 0)
                     {
                         model = field.Name.StringValue;
@@ -323,8 +323,6 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                                 // detect if field is object
                                 else
                                 {
-                                    Console.WriteLine($" ************************ name {argument.Name.StringValue} GetType {GetRealValue(((dynamic)argument.Value).Value)}  ---- ");
-
                                     if (innerType != null)
                                         FilterArguments<TUser, TRole, TUserRole>(argument.Name.StringValue, GetRealValue(((dynamic)argument.Value).Value), innerType, i, args, whereArgs, alias: headerModel);
                                     i++;
@@ -369,7 +367,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                             }
                             catch (Exception) { }
                         }
-                        DetectChild<TUser, TRole, TUserRole>(context, field.SelectionSet.Selections.Where(x => x is GraphQLField)
+                        DetectChild<TUser, TRole, TUserRole>(field.SelectionSet.Selections.Where(x => x is GraphQLField)
                             .Select(x => x as GraphQLField).ToList(), includes, innerResolvedType, args, whereArgs, mainModel: model, mainType: innerType);
                     }
                 }

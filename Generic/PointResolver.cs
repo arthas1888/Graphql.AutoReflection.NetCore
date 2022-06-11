@@ -25,13 +25,11 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             var pi = _typeField.GetProperty(_fieldName);
             dynamic point = pi.GetValue(context.Source);
             if (point == null) return null;
+            //return new ValueTask<object>(JsonExtensions.SerializeWithGeoJson(point, formatting: Formatting.None));
             return JsonExtensions.SerializeWithGeoJson(point, formatting: Formatting.None);
-
         }
 
-        public ValueTask<object> ResolveAsync(IResolveFieldContext context)
-        {
-            throw new NotImplementedException();
-        }
+        public ValueTask<object> ResolveAsync(IResolveFieldContext context) => new(Resolve(context));
+        
     }
 }

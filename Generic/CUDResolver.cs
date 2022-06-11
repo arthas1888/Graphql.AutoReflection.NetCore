@@ -25,7 +25,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             _httpContextAccessor = httpContextAccessor;
         }
 
-        public dynamic Resolve(IResolveFieldContext context)
+        public object Resolve(IResolveFieldContext context)
         {
             //Console.WriteLine($"----------------------Alias: {_type} {context.FieldAst.Alias} NAME {context.FieldAst.Name} ");
 
@@ -33,15 +33,17 @@ namespace SER.Graphql.Reflection.NetCore.Generic
 
             Type graphRepositoryType = typeof(IGraphRepository<>).MakeGenericType(new Type[] { _type });
             dynamic service = _httpContextAccessor.HttpContext.RequestServices.GetService(graphRepositoryType);
-            dynamic id =  null;
+            dynamic id = null;
             var sendObjFirebase = context.GetArgument<bool?>("sendObjFirebase") ?? true;
             dynamic deleteId = null;
             if (context.HasArgument("id"))
             {
-                id = context.GetArgument<object>("id");
+                id = context.GetArgument<dynamic>("id");
                 if (id is int) id = (int)id;
                 else if (id is int) id = id.ToString();
                 else if (id is Guid) id = (Guid)deleteId;
+
+                Console.WriteLine($"----------------------id: {id}  {id.GetType()} ----------------------");
             }
             if (context.HasArgument($"{_type.Name.ToLower().ToSnakeCase()}Id"))
             {
@@ -60,11 +62,12 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             List<string> includes = new();
             dynamic resolvedType = context.FieldDefinition.ResolvedType;
 
-            foreach (dynamic field in context.FieldAst.SelectionSet.Selections)
+            foreach (var field in context.FieldAst.SelectionSet.Selections.Where(x => x is GraphQLField)
+                            .Select(x => x as GraphQLField).ToList())
             {
                 if (field.SelectionSet.Selections.Count > 0)
                 {
-                    model = field.Name;
+                    model = field.Name.StringValue;
                     try
                     {
                         fieldType = ((IEnumerable<FieldType>)resolvedType.Fields).SingleOrDefault(x => x.Name == field.Name);
@@ -90,8 +93,8 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                 var variable = context.Variables.FirstOrDefault(x => x.Name == (string)argName.Value.GetPropertyValue(typeof(string)));
                 if (variable != null && variable.Value.GetType() == typeof(Dictionary<string, object>))
                     dbEntity = service.Update(id, entity, (Dictionary<string, object>)variable.Value, alias, sendObjFirebase, includes);
-                //else
-                //    dbEntity = service.Update(id, entity, (Dictionary<string, object>)argName.Value.Value, alias, sendObjFirebase, includes);
+                else
+                    dbEntity = service.Update(id, entity, ((dynamic)argName.Value).Value, alias, sendObjFirebase, includes);
 
                 if (dbEntity == null)
                 {
@@ -115,6 +118,8 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             return service.Create(entity, alias, sendObjFirebase, includes);
         }
 
+        public ValueTask<object> ResolveAsync(IResolveFieldContext context) => new(Resolve(context));
+        
         private void GetError(IResolveFieldContext context)
         {
             var error = new ValidationError(context.Document.Source,
@@ -124,9 +129,5 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             context.Errors.Add(error);
         }
 
-        public ValueTask<object> ResolveAsync(IResolveFieldContext context)
-        {
-            throw new NotImplementedException();
-        }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using GraphQL.Authorization;
+using GraphQL.Server.Transports.AspNetCore;
 using GraphQL.Validation;
 using Microsoft.AspNetCore.Http;
 using System;
@@ -12,5 +13,6 @@ namespace SER.Graphql.Reflection.NetCore
     public class GraphQLUserContext : Dictionary<string, object>, IProvideClaimsPrincipal
     {
         public ClaimsPrincipal User { get; set; }
+
     }
 }
