@@ -149,7 +149,7 @@ namespace SER.Graphql.Reflection.NetCore.Permissions
                     // validation rule should check that but here we should just ignore that
                     // "unknown" field.
                     if (context.Variables != null &&
-                        context.Variables.TryGetValue(variableRef.Name.StringValue, out object? input) && //ISSUE:allocation
+                        context.Variables.TryGetValue(variableRef.Name.StringValue, out object input) && //ISSUE:allocation
                         input is Dictionary<string, object> fieldsValues)
                     {
                         foreach (var field in variableType.Fields)

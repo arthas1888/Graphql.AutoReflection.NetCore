@@ -17,6 +17,7 @@ using GraphQL.Execution;
 using SER.Graphql.Reflection.NetCore.CustomScalar;
 using GraphQLParser.AST;
 using GraphQLParser;
+using SER.Graphql.Reflection.NetCore.Parser;
 
 namespace SER.Graphql.Reflection.NetCore.Generic
 {
@@ -261,7 +262,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                         else
                         {
                             //Console.WriteLine($" ************************ name {argument.Key} Value {argument.Value.Value} {argument.Value.Value.GetType()}");
-                            FilterArguments<TUser, TRole, TUserRole>(argument.Key, GetRealValue((dynamic)argument.Value.Value), type, i, args, whereArgs);
+                            FilterArguments<TUser, TRole, TUserRole>(argument.Key, argument.Value.Value.GetRealValue(), type, i, args, whereArgs);
                             i++;
                         }
                     }
@@ -318,20 +319,20 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                                 if (argument.Name == "all")
                                 {
                                     if (innerType != null)
-                                        i = FilterAllFields(innerType, args, whereArgs, i, GetRealValue(((dynamic)argument.Value).Value), parentModel: headerModel);
+                                        i = FilterAllFields(innerType, args, whereArgs, i, argument.Value.ParseLiteral().ToString(), parentModel: headerModel);
                                 }
                                 // detect if field is object
                                 else
                                 {
                                     if (innerType != null)
-                                        FilterArguments<TUser, TRole, TUserRole>(argument.Name.StringValue, GetRealValue(((dynamic)argument.Value).Value), innerType, i, args, whereArgs, alias: headerModel);
+                                        FilterArguments<TUser, TRole, TUserRole>(argument.Name.StringValue, argument.Value.ParseLiteral(), innerType, i, args, whereArgs, alias: headerModel);
                                     i++;
                                 }
                             }
                         }
                         else if (field.Arguments != null && field.Arguments.Count > 0)
                         {
-                            if (field.Arguments.Any(x => x.Name.StringValue == "join")) //  && (bool)x.Value.Value == true))
+                            if (field.Arguments.Any(x => x.Name.StringValue == "join" && (bool)x.Value.ParseLiteral() == true))
                             {
                                 joinList = true;
                                 includes.Add(model);
@@ -343,13 +344,13 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                                     if (argument.Name == "all")
                                     {
                                         if (innerType != null)
-                                            i = FilterAllFields(innerType, args, whereArgs, i, GetRealValue(((dynamic)argument.Value).Value),
+                                            i = FilterAllFields(innerType, args, whereArgs, i, argument.Value.ParseLiteral().ToString(),
                                             isList: true, parentModel: model);
                                     }
                                     else
                                     {
                                         if (innerType != null)
-                                            FilterArguments<TUser, TRole, TUserRole>(argument.Name.StringValue, GetRealValue(((dynamic)argument.Value).Value), innerType, i, args, whereArgs,
+                                            FilterArguments<TUser, TRole, TUserRole>(argument.Name.StringValue, argument.Value.ParseLiteral(), innerType, i, args, whereArgs,
                                                 isList: true, alias: $"{model}.Any(");
                                         i++;
                                     }
@@ -374,25 +375,6 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             }
         }
 
-        /// <summary>
-        /// obtiene el valor verdadero de un campo tipo ROM
-        /// </summary>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        private static object GetRealValue(dynamic value)
-        {
-            if (value is ROM)
-            {
-                if (int.TryParse(value.ToString(), out int @int))
-                    return @int;
-                if (double.TryParse(value.ToString(), out double @double))
-                    return @double;
-                if (bool.TryParse(value.ToString(), out bool @bool))
-                    return @bool;
-                return value.ToString();
-            }
-            else return value;
-        }
 
         public static string FirstLetterToUpper(string str)
         {

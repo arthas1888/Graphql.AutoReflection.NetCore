@@ -18,15 +18,15 @@ namespace SER.Graphql.Reflection.NetCore.Custom
         /// </summary>
         /// <param name="builder"></param>
         /// <returns></returns>
-        public static IGraphQLBuilder AddCustomWebSockets(this IGraphQLBuilder builder)
+        public static IServiceCollection AddCustomWebSockets(this IServiceCollection services)
         {
-            builder.Services
+            services
                 .AddTransient(typeof(IWebSocketConnectionFactory<>), typeof(WebSocketConnectionFactory<>))
                 .AddTransient<IOperationMessageListener, LogMessagesListener>()
                 .AddTransient<IOperationMessageListener, ProtocolMessageListener>()
                 .AddTransient<IOperationMessageListener, AuthenticationListener>();
 
-            return builder;
+            return services;
         }
     }
 }

@@ -34,6 +34,8 @@ using System.Reactive.Linq;
 using SER.Graphql.Reflection.NetCore.WebSocket;
 using Microsoft.AspNetCore.Hosting;
 using GraphQLParser.AST;
+using GraphQLParser;
+using SER.Graphql.Reflection.NetCore.Parser;
 
 namespace SER.Graphql.Reflection.NetCore
 {
@@ -111,7 +113,7 @@ namespace SER.Graphql.Reflection.NetCore
 
         public async Task<IEnumerable<T>> GetAllAsync(string alias, List<string> includeExpressions = null,
             string orderBy = "", string whereArgs = "", int? take = null, int? offset = null, Dictionary<string, object> customfilters = null, params object[] args)
-        {            
+        {
             return await GetQuery(alias, includeExpressions: includeExpressions, orderBy: orderBy,
                 first: take, offset: offset, whereArgs: whereArgs, customfilters: customfilters, args: args)
                 .AsNoTracking().ToListAsync();
@@ -309,7 +311,7 @@ namespace SER.Graphql.Reflection.NetCore
             var args = new List<object>();
             var orderBy = context.GetArgument<string>("orderBy");
             var take = context.GetArgument<int?>("first");
-            
+
             string SqlConnectionStr = !string.IsNullOrEmpty(_optionsDelegate.CurrentValue.ConnectionString) ?
                 _optionsDelegate.CurrentValue.ConnectionString : !string.IsNullOrEmpty(_config.GetConnectionString("DefaultConnection")) ?
                     _config.GetConnectionString("DefaultConnection") :
@@ -322,12 +324,6 @@ namespace SER.Graphql.Reflection.NetCore
             using DbContext _dbContext = (DbContext)Activator.CreateInstance(typeof(TContext), new object[] { optionsBuilder.Options });
             // using var _db = new DbContext(optionsBuilder.Options);
             IQueryable<T> query = _dbContext.Set<T>();
-
-            foreach (var arg in context.Arguments)
-            {
-                if (arg.Value.Value != null)
-                    _logger.LogInformation($" ---------------------- \nKey {arg.Key} Value {arg.Value.Value}");
-            }
 
             List<string> includeExpressions = new();
             GraphUtils.DetectChild<TUser, TRole, TUserRole>(context.FieldAst.SelectionSet.Selections.Where(x => x is GraphQLField)
@@ -419,9 +415,17 @@ namespace SER.Graphql.Reflection.NetCore
             get { return _context.Set<T>(); }
         }
 
+        /// <summary>
+        /// crea un instanica tipo T en la base de datos
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="alias"></param>
+        /// <param name="sendObjFirebase"></param>
+        /// <param name="includeExpressions"></param>
+        /// <returns></returns>
         public async Task<T> Create(T entity, string alias = "", bool sendObjFirebase = true, List<string> includeExpressions = null)
         {
-            // var objstr = JsonSerializer.Serialize(entity);
+            //var objstr = JsonSerializer.Serialize(entity);
             //_logger.LogInformation($"----------------------------objstr {objstr}");
 
             var cacheKeySize = string.Format("_{0}_size", model);
@@ -467,6 +471,33 @@ namespace SER.Graphql.Reflection.NetCore
             return entity;
         }
 
+        /// <summary>
+        /// creacion de la entidad a traves de un diccionario
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="alias"></param>
+        /// <param name="sendObjFirebase"></param>
+        /// <param name="includeExpressions"></param>
+        /// <returns></returns>
+        public async Task<T> Create(Dictionary<string, object> dict, string alias = "", bool sendObjFirebase = true, List<string> includeExpressions = null)
+        {
+            dynamic entity = Activator.CreateInstance(typeof(T));
+            foreach (var values in dict)
+            {
+                var propertyInfo = typeof(T).GetProperty(values.Key);
+                if (propertyInfo.Name == "id") continue;
+                propertyInfo.SetValue(entity, values.Value.GetRealValue(), null);
+            }
+            return await Create(entity, alias: alias, sendObjFirebase: sendObjFirebase, includeExpressions: includeExpressions);
+
+
+        }
+
+        /// <summary>
+        /// obtiene el valor del primary key cuando se crea un objeto
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <returns></returns>
         public virtual string GetKey(T entity)
         {
             var keyName = _context.Model.FindEntityType(typeof(T)).FindPrimaryKey()?.Properties
@@ -479,6 +510,23 @@ namespace SER.Graphql.Reflection.NetCore
             throw new NotImplementedException();
         }
 
+        public async Task<T> Update(object id, Dictionary<string, object> entity, Dictionary<string, object> dict, string alias = "", bool sendObjFirebase = true, List<string> includeExpressions = null)
+        {
+            var obj = entity.DictToObject<T>();
+            
+            return await Update(id, obj, dict, alias: alias, sendObjFirebase: sendObjFirebase, includeExpressions: includeExpressions);
+        }
+
+        /// <summary>
+        /// actualizacion de una entidad
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="entity"></param>
+        /// <param name="dict"></param>
+        /// <param name="alias"></param>
+        /// <param name="sendObjFirebase"></param>
+        /// <param name="includeExpressions"></param>
+        /// <returns></returns>
         public async Task<T> Update(object id, T entity, Dictionary<string, object> dict, string alias = "", bool sendObjFirebase = true, List<string> includeExpressions = null)
         {
             //var obj = GetModel.Find(id);
@@ -643,8 +691,6 @@ namespace SER.Graphql.Reflection.NetCore
                 }
                 var dataDb = iQueryable.Where(expToEvaluate).ToList();
 
-
-                //Console.WriteLine($"  ***************** values {JsonSerializer.Serialize(values)} ");
                 var stringJson = JsonSerializer.Serialize(values);
                 var jsonElement = ToJsonDocument(stringJson);
 
@@ -748,7 +794,6 @@ namespace SER.Graphql.Reflection.NetCore
                     break;
                 }
             }
-            //Console.WriteLine($"----------------------------------llega aca!!!!!!!!!!!!!!!! parentId {parentId} paramFK {paramFK} paramType {valueType}");
 
             //var paramToEvaluate = typeof(M).GetProperties().FirstOrDefault(x => x.PropertyType.Name == paramFK).PropertyType;
             //if (paramToEvaluate.IsGenericType && paramToEvaluate.GetGenericTypeDefinition() == typeof(Nullable<>))
@@ -864,7 +909,6 @@ namespace SER.Graphql.Reflection.NetCore
             {
                 try
                 {
-                    //_logger.LogInformation($" ---------------- entra aca!!!!!!!!");
                     _optionsDelegate.CurrentValue.CallbackStatus.Invoke(new GraphStatusRequest
                     {
                         ClassName = typeof(T).Name,

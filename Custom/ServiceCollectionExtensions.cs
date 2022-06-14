@@ -20,11 +20,10 @@ using SER.Models.SERAudit;
 using SER.Models;
 using SER.Graphql.Reflection.NetCore.WebSocket;
 using SER.Graphql.Reflection.NetCore.Permissions;
-using GraphQL.Server.Transports.Subscriptions.Abstractions;
-using GraphQL.MicrosoftDI;
 using GraphQL.SystemTextJson;
 using GraphQL.DI;
 using GraphQL.Authorization;
+using GraphQL.MicrosoftDI;
 
 namespace SER.Graphql.Reflection.NetCore.Custom
 {

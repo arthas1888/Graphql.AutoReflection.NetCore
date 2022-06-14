@@ -3,7 +3,7 @@
 	<PropertyGroup>
 		<TargetFramework>net6.0</TargetFramework>
 		<Company>SER Soluciones</Company>
-		<Version>1.0.0-preview-2</Version>
+		<Version>1.0.0</Version>
 		<AssemblyName>SER.Graphql.Reflection.NetCore</AssemblyName>
 		<RootNamespace>SER.Graphql.Reflection.NetCore</RootNamespace>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
@@ -18,10 +18,9 @@
 
 	<ItemGroup>
 		
+		<PackageReference Include="GraphQL.MicrosoftDI" Version="5.3.0" />		
 		<PackageReference Include="GraphQL.Authorization" Version="5.0.0" />		
-		<PackageReference Include="GraphQL.DataLoader" Version="5.3.0" />		
-		<PackageReference Include="GraphQL.Server.All" Version="6.1.0" />		
-		<PackageReference Include="GraphQL.Server.Core" Version="5.2.1" />
+		<PackageReference Include="GraphQL.DataLoader" Version="5.3.0" />	
 		<PackageReference Include="GraphQL.Server.Transports.AspNetCore" Version="6.1.0" />
 		<PackageReference Include="GraphQL.SystemTextJson" Version="5.3.0" />
 		<PackageReference Include="GraphQL.Server.Ui.Playground" Version="6.1.0" />
@@ -29,7 +28,7 @@
 
 		<PackageReference Include="GraphQL-Parser" Version="8.0.0" />
 		<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL.NetTopologySuite" Version="6.0.4" />
-		<PackageReference Include="SER.Models" Version="1.0.2" />
+		<PackageReference Include="SER.Models" Version="1.1.0" />
 		<PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.19.0" />
 
 		<PackageReference Include="System.Linq.Dynamic.Core" Version="1.2.18" />
@@ -37,5 +36,4 @@
 		<PackageReference Include="Microsoft.EntityFrameworkCore.DynamicLinq" Version="6.2.18" />
 	</ItemGroup>
 	
-
 </Project>

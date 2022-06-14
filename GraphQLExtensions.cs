@@ -135,7 +135,7 @@ namespace SER.Graphql.Reflection.NetCore
 
         public static void RequireAuthentication(this IProvideMetadata type)
         {
-            type.AuthorizeWith("Authenticated");
+            type.AuthorizeWithPolicy("Authenticated");
         }
 
         public static void RequirePermission(this IProvideMetadata type, string permission)

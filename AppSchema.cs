@@ -27,6 +27,7 @@ namespace SER.Graphql.Reflection.NetCore
             ValueConverter.Register(typeof(string), typeof(TimeSpan), TimeSpanConvert);
             ValueConverter.Register(typeof(string), typeof(int), IntConvert);
             ValueConverter.Register(typeof(string), typeof(DateTime), DatetimeConvert);
+            ValueConverter.Register(typeof(string), typeof(bool), BoolConvert);
 
             Query = services.GetRequiredService<GraphQLQuery<TUser, TRole, TUserRole>>();
             Mutation = services.GetRequiredService<AppMutation>();
@@ -36,6 +37,19 @@ namespace SER.Graphql.Reflection.NetCore
             RegisterType(new MyIntGraphType());
             RegisterType(new MyLongGraphType());
             RegisterType(new MyDateTimeGraphType());
+        }
+        
+        private object BoolConvert(object value)
+        {
+            try
+            {
+                var input = (string)value;
+                return bool.Parse(input);
+            }
+            catch
+            {
+                throw new FormatException($"Failed to parse bool from input '{value}'. Input should be a string of bool representation");
+            }
         }
 
         private object IntConvert(object value)

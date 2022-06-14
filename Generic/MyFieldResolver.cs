@@ -16,6 +16,7 @@ using System.Text.Json;
 using GraphQLParser.AST;
 using System.Threading.Tasks;
 using GraphQLParser;
+using SER.Graphql.Reflection.NetCore.Parser;
 
 namespace SER.Graphql.Reflection.NetCore.Generic
 {
@@ -75,18 +76,18 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                         .Select(x => x as GraphQLField).ToList(), includes,
                         ((dynamic)context.FieldDefinition.ResolvedType).ResolvedType, args, whereArgs,
                         arguments: context.Arguments, mainType: type);
-                    Console.WriteLine($"whereArgs list: {whereArgs} args {string.Join(", ", args)}");
-
+                    Console.WriteLine($"whereArgs list: {whereArgs} args {string.Join(", ", args)} ");
+                    
                     return service
                         .GetAllAsync(alias, whereArgs: whereArgs.ToString(),
-                            take: GetRealValue(context.GetArgument<dynamic>("first")), offset: GetRealValue(context.GetArgument<dynamic>("page")),
+                            take: context.GetArgument<object>("first")?.GetRealValue() as int?, offset: context.GetArgument<object>("page")?.GetRealValue() as int?,
                             orderBy: context.GetArgument<string>("orderBy"),
                             includeExpressions: includes, args: args.ToArray())
                         .Result;
                 }
                 else if (context.FieldAst.Name.StringValue.Contains("_count"))
                 {
-                    GraphUtils.DetectChild<TUser, TRole, TUserRole>(context.FieldAst.SelectionSet.Selections.Where(x => x is GraphQLField)
+                    GraphUtils.DetectChild<TUser, TRole, TUserRole>(context.FieldAst.SelectionSet?.Selections.Where(x => x is GraphQLField)
                         .Select(x => x as GraphQLField).ToList(), includes,
                         context.FieldDefinition.ResolvedType, args, whereArgs,
                         arguments: context.Arguments, mainType: type);
@@ -97,7 +98,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                 }
                 else if (context.FieldAst.Name.StringValue.Contains("_sum"))
                 {
-                    GraphUtils.DetectChild<TUser, TRole, TUserRole>(context.FieldAst.SelectionSet.Selections.Where(x => x is GraphQLField)
+                    GraphUtils.DetectChild<TUser, TRole, TUserRole>(context.FieldAst.SelectionSet?.Selections.Where(x => x is GraphQLField)
                         .Select(x => x as GraphQLField).ToList(), includes,
                         context.FieldDefinition.ResolvedType, args, whereArgs,
                         arguments: context.Arguments, mainType: type);
@@ -158,27 +159,6 @@ namespace SER.Graphql.Reflection.NetCore.Generic
 
         public ValueTask<object> ResolveAsync(IResolveFieldContext context) => new(Resolve(context));
 
-
-        /// <summary>
-        /// obtiene el valor verdadero de un campo tipo ROM
-        /// </summary>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        private static object GetRealValue(dynamic value)
-        {
-            if (value is ROM)
-            {
-                if (int.TryParse(value.ToString(), out int @int))
-                    return @int;
-                if (double.TryParse(value.ToString(), out double @double))
-                    return @double;
-                if (bool.TryParse(value.ToString(), out bool @bool))
-                    return @bool;
-                return value.ToString();
-            }
-            else return value;
-        }
-        
         private void GetError(IResolveFieldContext context)
         {
             var error = new ValidationError(context.Document.Source,

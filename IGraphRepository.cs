@@ -17,6 +17,7 @@ namespace SER.Graphql.Reflection.NetCore
         Task<T> Create(T entity, string alias = "", bool sendObjFirebase = true, List<string> includeExpressions = null);
         Task<T> Update(object id, T entity, string alias = "", bool sendObjFirebase = true, List<string> includeExpressions = null);
         Task<T> Update(object id, T entity, Dictionary<string, object> dict, string alias = "", bool sendObjFirebase = true, List<string> includeExpressions = null);
+        Task<T> Update(object id, Dictionary<string, object> entity, Dictionary<string, object> dict, string alias = "", bool sendObjFirebase = true, List<string> includeExpressions = null);
         Task<T> Delete(object id, string alias = "", bool sendObjFirebase = true);
     }
 }

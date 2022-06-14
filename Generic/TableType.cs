@@ -362,7 +362,7 @@ namespace SER.Graphql.Reflection.NetCore
                 objectGraphType = Activator.CreateInstance(inherateType);
                 objectGraphType.Name = key;
                 var permission = columnMetadata.Type.Name.ToLower();
-                var friendlyTableName = Generic.StringExt.CanonicalName(Utilities.StringExt.ToSnakeCase(columnMetadata.Type.Name));
+                var friendlyTableName = Generic.StringExt.CanonicalName(Utilities.StringExtensions.ToSnakeCase(columnMetadata.Type.Name));
                 //if (!_crud)
                 //    objectGraphType.ValidatePermissions(permission, friendlyTableName, columnMetadata.DataType);
                 //if (!typesWithoutPermission.Contains(permission) &&
@@ -402,7 +402,7 @@ namespace SER.Graphql.Reflection.NetCore
                 objectGraphInternal = Activator.CreateInstance(inherateType);
                 objectGraphInternal.Name = key;
                 var permission = columnMetadata.Type.Name.ToLower();
-                var friendlyTableName = Generic.StringExt.CanonicalName(Utilities.StringExt.ToSnakeCase(columnMetadata.Type.Name));
+                var friendlyTableName = Generic.StringExt.CanonicalName(Utilities.StringExtensions.ToSnakeCase(columnMetadata.Type.Name));
 
 
                 foreach (var tableColumn in metaTable.Columns)
