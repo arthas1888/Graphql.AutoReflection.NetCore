@@ -111,6 +111,16 @@ namespace SER.Graphql.Reflection.NetCore
                 x.Type == Claims.Role).Select(x => x.Value).ToList();
         }
 
+        public async Task<T> GetFirstAsync(string alias, List<string> includeExpressions = null,
+            string whereArgs = "", Dictionary<string, object> customfilters = null, params object[] args)
+        {
+            var entity = await GetQuery(alias, includeExpressions: includeExpressions,
+               first: 1, whereArgs: whereArgs, customfilters: customfilters, args: args)
+               .AsNoTracking().FirstOrDefaultAsync();
+            if (entity == null) return null;
+            return entity;
+        }
+
         public async Task<IEnumerable<T>> GetAllAsync(string alias, List<string> includeExpressions = null,
             string orderBy = "", string whereArgs = "", int? take = null, int? offset = null, Dictionary<string, object> customfilters = null, params object[] args)
         {

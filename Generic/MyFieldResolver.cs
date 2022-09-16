@@ -85,6 +85,26 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                             includeExpressions: includes, args: args.ToArray())
                         .Result;
                 }
+                else if (context.FieldAst.Name.StringValue.Contains("_first"))
+                {
+                    GraphUtils.DetectChild<TUser, TRole, TUserRole>(context.FieldAst.SelectionSet.Selections.Where(x => x is GraphQLField)
+                        .Select(x => x as GraphQLField).ToList(), includes,
+                        context.FieldDefinition.ResolvedType, args, whereArgs,
+                        arguments: context.Arguments, mainType: type);
+                    Console.WriteLine($"whereArgs single obj: {whereArgs}");
+
+                    var dbEntity = service
+                        .GetFirstAsync(alias, whereArgs: whereArgs.ToString(),
+                            includeExpressions: includes, args: args.ToArray())
+                        .Result;
+
+                    if (dbEntity == null)
+                    {
+                        GetError(context);
+                        return null;
+                    }
+                    return dbEntity;
+                }
                 else if (context.FieldAst.Name.StringValue.Contains("_count"))
                 {
                     GraphUtils.DetectChild<TUser, TRole, TUserRole>(context.FieldAst.SelectionSet?.Selections.Where(x => x is GraphQLField)
