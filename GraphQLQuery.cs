@@ -90,15 +90,6 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                     Arguments = new QueryArguments(tableType.TableArgs)
                 });
 
-                AddField(new FieldType
-                {
-                    Name = $"{friendlyTableName}_first",
-                    Type = tableType.GetType(),
-                    ResolvedType = tableType,
-                    Resolver = _fieldResolver, // new MyFieldResolver<TUser, TRole, TUserRole>(_fillDataExtensions, _httpContextAccessor),
-                    Arguments = new QueryArguments(tableType.TableArgs)
-                });
-
                 var inherateListType = typeof(ListGraphType<>).MakeGenericType(new Type[] { tableType.GetType() });
                 dynamic listType = Activator.CreateInstance(inherateListType);
                 listType.ResolvedType = tableType;
