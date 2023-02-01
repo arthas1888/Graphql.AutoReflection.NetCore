@@ -94,6 +94,9 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             var patternStr = @"_iext";
             Match matchStr = Regex.Match(key, patternStr);
 
+            var patternIn = @"_in";
+            Match matchIn = Regex.Match(key, patternIn);
+
             var patternOr = @"_iext_or";
             Match matchOr = Regex.Match(key, patternOr);
 
@@ -127,7 +130,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                     }
                     else
                     {
-                        select = string.Format("@{0}.Contains({1})", index, key);
+                        select = string.Format("@{0}.Contains(string(object({1})))", index, key);
                         values.Add(arrayValues);
                     }
 
@@ -163,6 +166,36 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                         values.Add(value);
                         select = string.Format(" = @{0}", index);
                     }
+                }
+
+            }
+            else if (matchIn.Success)
+            {
+                key = Regex.Replace(key, patternIn, "");
+
+                var patternSeparate = @"¬";
+
+                if (Regex.Match(value.ToString(), patternSeparate).Success)
+                {
+                    var arrayValues = Regex.Split(value.ToString(), patternSeparate);
+                    
+                    if (Utilities.TypeExtensions.IsNumber(type) || type.IsEnum)
+                    {
+                        select = string.Format("@{0}.Contains(int({1}))", index, key);
+                        values.Add(Array.ConvertAll(arrayValues, s => int.Parse(s)));
+                    }
+                    else
+                    {
+                        select = string.Format("@{0}.Contains(string(object({1})))", index, key);
+                        values.Add(arrayValues);
+                    }
+
+                    appendKey = false;
+                }
+                else
+                {
+                    values.Add(value);
+                    select = string.Format(" = @{0}", index);
                 }
 
             }
@@ -410,6 +443,9 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             var patternStr = @"_iext";
             Match matchStr = Regex.Match(keyName, patternStr);
 
+            var patternIn = @"_in";
+            Match matchIn = Regex.Match(keyName, patternIn);
+
             var patternOr = @"_iext_or";
             Match matchOr = Regex.Match(keyName, patternOr);
 
@@ -425,7 +461,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             var patternEnum = @"_enum";
             Match matchIsEnum = Regex.Match(keyName, patternEnum);
 
-            if (matchStr.Success || matchExtStr.Success || matchIsNulltStr.Success || matchOr.Success || matchIsEnum.Success || matchExcludStr.Success)
+            if (matchStr.Success || matchExtStr.Success || matchIsNulltStr.Success || matchOr.Success || matchIsEnum.Success || matchExcludStr.Success || matchIn.Success)
             {
                 var fieldName = "";
 
@@ -433,6 +469,8 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                     fieldName = Regex.Replace(keyName, patternOr, "");
                 else if (matchStr.Success)
                     fieldName = Regex.Replace(keyName, patternStr, "");
+                else if (matchIn.Success)
+                    fieldName = Regex.Replace(keyName, patternIn, "");
                 else fieldName = keyName;
 
                 if (matchExtStr.Success)

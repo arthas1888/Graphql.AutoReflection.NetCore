@@ -330,6 +330,7 @@ namespace SER.Graphql.Reflection.NetCore.Custom
                 if ((result as ExecutionResult).Errors != null)
                     foreach (var error in (result as ExecutionResult).Errors)
                     {
+                        _logger.LogError($"_______________________________ Error Graph request {error.Message} InnerException {error.InnerException} ----------------");
                         var ex = new ExecutionError(error.Message);
                         if (error.InnerException != null)
                             ex = new ExecutionError(error.InnerException.Message, error.InnerException);

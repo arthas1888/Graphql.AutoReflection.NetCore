@@ -61,8 +61,8 @@ namespace SER.Graphql.Reflection.NetCore
 
         private void InitMainGraphTableColumn(Type parentType, ColumnMetadata mainTableColumn)
         {
-            //if (parentType.Name == "ApplicationUser")
-            //    Console.WriteLine($"{mainTableColumn.ColumnName} GraphType: {GraphUtils.ResolveGraphType(mainTableColumn.Type)} Type: {mainTableColumn.Type} IsList {mainTableColumn.IsList}");
+            //if (parentType.Name.ToLower() == "chargeaccount" || parentType.Name.ToLower() == "chargeaccountregister")
+            //Console.WriteLine($"{mainTableColumn.ColumnName} GraphType: {GraphUtils.ResolveGraphType(mainTableColumn.Type)} Type: {mainTableColumn.Type} IsList {mainTableColumn.IsList}");
             // instancias internas
             if (mainTableColumn.IsJson)    // incluye litas de cada objeto
             {
@@ -162,8 +162,8 @@ namespace SER.Graphql.Reflection.NetCore
                     );
 
                 }
-            }
 
+            }
         }
 
         private void InitGraphTableColumn(Type parentType, ColumnMetadata columnMetadata, dynamic objectGraphType, QueryArguments queryArguments)
@@ -221,7 +221,7 @@ namespace SER.Graphql.Reflection.NetCore
                     new QueryArgument<StringGraphType> { Name = "all" }
                 };
                 var metaTable = _dbMetadata.GetTableMetadatas().FirstOrDefault(x => x.Type.Name == columnMetadata.Type.Name);
-                var tableType = GetThirdGraphType(metaTable, columnMetadata, queryThirdArguments);
+                var tableType = GetThirdGraphType(metaTable, columnMetadata, queryThirdArguments, $"Third_{columnMetadata.Type.Name}");
 
                 objectGraphType.AddField(new FieldType
                 {
@@ -306,10 +306,40 @@ namespace SER.Graphql.Reflection.NetCore
             dynamic listGraphType = null;
             if (!_tableNameLookup.ExistListGraphType($"{columnMetadata.ColumnName}_primary_list"))
             {
-                var tableType = GetSecondGraphType(columnMetadata, queryThirdArguments, metaTable, isList: true);
-                var inherateListType = typeof(ListGraphType<>).MakeGenericType(new Type[] { tableType.GetType() });
+                //var objectGraphType = GetSecondGraphType(columnMetadata, queryThirdArguments, metaTable, isList: true);
+
+                string key = $"Internal_object_list_{columnMetadata.Type.Name}";
+                dynamic tableType = null;
+                metaTable ??= _dbMetadata.GetTableMetadatas().FirstOrDefault(x => x.Type.Name == columnMetadata.Type.Name);
+                if (!_tableNameLookup.ExistGraphType(key))
+                {
+                    //Creacion de instancia
+                    var inherateType = typeof(ObjectGraphType<>).MakeGenericType(new Type[] { columnMetadata.Type });
+                    tableType = Activator.CreateInstance(inherateType);
+                    tableType.Name = key;
+                    var permission = columnMetadata.Type.Name.ToLower();
+                    var friendlyTableName = StringExt.CanonicalName(Utilities.StringExtensions.ToSnakeCase(columnMetadata.Type.Name));
+
+                    foreach (var tableColumn in metaTable.Columns)
+                    {
+                        InitGraphTableColumn(columnMetadata.Type, tableColumn, tableType, queryThirdArguments);
+
+                        FillArgs(tableColumn.ColumnName, tableColumn.Type, parentModel: columnMetadata.ColumnName, isList: isList);
+                    }
+                }
+                else
+                {
+                    foreach (var tableColumn in metaTable.Columns)
+                    {
+                        FillArguments(queryThirdArguments, tableColumn.ColumnName, tableColumn.Type);
+                        FillArgs(tableColumn.ColumnName, tableColumn.Type, parentModel: columnMetadata.ColumnName, isList: isList);
+                    }
+                }
+                var objectGraphType = _tableNameLookup.GetOrInsertGraphType(key, tableType);
+
+                var inherateListType = typeof(ListGraphType<>).MakeGenericType(new Type[] { objectGraphType.GetType() });
                 listGraphType = Activator.CreateInstance(inherateListType);
-                listGraphType.ResolvedType = tableType;
+                listGraphType.ResolvedType = objectGraphType;
                 // Field<ListGraphType<CityType>>(nameof(State.cities));
             }
             else
@@ -332,7 +362,7 @@ namespace SER.Graphql.Reflection.NetCore
             dynamic listGraphType = null;
             if (!_tableNameLookup.ExistSecondListGraphType($"{columnMetadata.ColumnName}_second_list"))
             {
-                var tableType = GetThirdGraphType(metaTable, columnMetadata, queryThirdArguments);
+                var tableType = GetThirdGraphType(metaTable, columnMetadata, queryThirdArguments, $"Third_object_list_{columnMetadata.Type.Name}");
                 var inherateListType = typeof(ListGraphType<>).MakeGenericType(new Type[] { tableType.GetType() });
                 listGraphType = Activator.CreateInstance(inherateListType);
                 listGraphType.ResolvedType = tableType;
@@ -357,12 +387,11 @@ namespace SER.Graphql.Reflection.NetCore
             if (!_tableNameLookup.ExistGraphType(key))
             {
                 //Creacion de instancia
-                //objectGraphType = new ObjectGraphType();
                 var inherateType = typeof(ObjectGraphType<>).MakeGenericType(new Type[] { columnMetadata.Type });
                 objectGraphType = Activator.CreateInstance(inherateType);
                 objectGraphType.Name = key;
                 var permission = columnMetadata.Type.Name.ToLower();
-                var friendlyTableName = Generic.StringExt.CanonicalName(Utilities.StringExtensions.ToSnakeCase(columnMetadata.Type.Name));
+                var friendlyTableName = StringExt.CanonicalName(Utilities.StringExtensions.ToSnakeCase(columnMetadata.Type.Name));
                 //if (!_crud)
                 //    objectGraphType.ValidatePermissions(permission, friendlyTableName, columnMetadata.DataType);
                 //if (!typesWithoutPermission.Contains(permission) &&
@@ -391,9 +420,8 @@ namespace SER.Graphql.Reflection.NetCore
             return _tableNameLookup.GetOrInsertGraphType(key, objectGraphType);
         }
 
-        private dynamic GetThirdGraphType(TableMetadata metaTable, ColumnMetadata columnMetadata, QueryArguments queryArguments)
+        private dynamic GetThirdGraphType(TableMetadata metaTable, ColumnMetadata columnMetadata, QueryArguments queryArguments, string key)
         {
-            string key = $"Third_{columnMetadata.Type.Name}";
             dynamic objectGraphInternal = null;
             if (!_tableNameLookup.ExistGraphType(key))
             {
@@ -402,7 +430,7 @@ namespace SER.Graphql.Reflection.NetCore
                 objectGraphInternal = Activator.CreateInstance(inherateType);
                 objectGraphInternal.Name = key;
                 var permission = columnMetadata.Type.Name.ToLower();
-                var friendlyTableName = Generic.StringExt.CanonicalName(Utilities.StringExtensions.ToSnakeCase(columnMetadata.Type.Name));
+                var friendlyTableName = StringExt.CanonicalName(Utilities.StringExtensions.ToSnakeCase(columnMetadata.Type.Name));
 
 
                 foreach (var tableColumn in metaTable.Columns)
@@ -455,7 +483,7 @@ namespace SER.Graphql.Reflection.NetCore
                             new QueryArgument<StringGraphType> { Name = "all" }
                         };
                         var metaTableInherit = _dbMetadata.GetTableMetadatas().FirstOrDefault(x => x.Type.Name == tableColumn.Type.Name);
-                        var tableType = GetFourthGraphType(metaTableInherit, tableColumn, queryThirdArguments);
+                        var tableType = GetFifthhGraphType(metaTableInherit, tableColumn, queryThirdArguments);
 
                         objectGraphInternal.AddField(new FieldType
                         {
@@ -528,6 +556,75 @@ namespace SER.Graphql.Reflection.NetCore
         private dynamic GetFourthGraphType(TableMetadata metaTable, ColumnMetadata columnMetadata, QueryArguments queryArguments, bool isList = false)
         {
             string key = $"Fourth_{columnMetadata.Type.Name}";
+            dynamic objectGraphInternal = null;
+            dynamic listGraphType = null;
+
+            if ((isList && !_tableNameLookup.ExistListGraphType(key + "_list")) || (!isList && !_tableNameLookup.ExistGraphType(key)))
+            {
+                var inherateType = typeof(ObjectGraphType<>).MakeGenericType(new Type[] { metaTable.Type });
+                objectGraphInternal = Activator.CreateInstance(inherateType);
+                objectGraphInternal.Name = key;
+
+                if (isList)
+                {
+                    var inherateListType = typeof(ListGraphType<>).MakeGenericType(new Type[] { objectGraphInternal.GetType() });
+                    listGraphType = Activator.CreateInstance(inherateListType);
+                    listGraphType.ResolvedType = objectGraphInternal;
+                }
+
+                foreach (var tableColumn in metaTable.Columns)
+                {
+                    if (tableColumn.Type == typeof(TimeSpan))
+                    {
+                        objectGraphInternal.AddField(
+                            new FieldType
+                            {
+                                Type = typeof(string).GetGraphTypeFromType(true),
+                                Name = tableColumn.ColumnName,
+                                Resolver = new TimeSpanResolver(metaTable.Type, tableColumn.ColumnName)
+                            }
+                       );
+                        FillArguments(queryArguments, tableColumn.ColumnName, tableColumn.Type);
+                    }
+                    else
+                    {
+
+                        objectGraphInternal.Field(
+                          GraphUtils.ResolveGraphType(tableColumn.Type),
+                            tableColumn.ColumnName
+                        );
+                        FillArguments(queryArguments, tableColumn.ColumnName, tableColumn.Type);
+                        if (tableColumn.Type.IsEnum)
+                        {
+                            FillArguments(queryArguments, $"{tableColumn.ColumnName}_enum", typeof(int));
+                            objectGraphInternal.AddField(
+                                new FieldType
+                                {
+                                    Type = typeof(int).GetGraphTypeFromType(true),
+                                    Name = $"{tableColumn.ColumnName}_value",
+                                    Resolver = new EnumResolver(metaTable.Type, tableColumn.ColumnName)
+                                }
+                            );
+                        }
+                    }
+                }
+            }
+            else
+            {
+                foreach (var tableColumn in metaTable.Columns)
+                {
+                    FillArguments(queryArguments, tableColumn.ColumnName, tableColumn.Type);
+                }
+            }
+            if (isList)
+                return _tableNameLookup.GetOrInsertListGraphType(key + "_list", listGraphType);
+            return _tableNameLookup.GetOrInsertGraphType(key, objectGraphInternal);
+        }
+
+
+        private dynamic GetFifthhGraphType(TableMetadata metaTable, ColumnMetadata columnMetadata, QueryArguments queryArguments, bool isList = false)
+        {
+            string key = $"Fifth_{columnMetadata.Type.Name}";
             dynamic objectGraphInternal = null;
             dynamic listGraphType = null;
 
@@ -765,7 +862,7 @@ namespace SER.Graphql.Reflection.NetCore
         }
 
         public ValueTask<object> ResolveAsync(IResolveFieldContext context) => new(Resolve(context));
-        
+
     }
 
     public class EnumResolver : IFieldResolver
