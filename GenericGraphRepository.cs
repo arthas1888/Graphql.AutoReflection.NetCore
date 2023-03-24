@@ -143,7 +143,7 @@ namespace SER.Graphql.Reflection.NetCore
             if (!string.IsNullOrEmpty(whereArgs) && args.Length > 0)
                 query = query.Where(whereArgs, args);
 
-            if (_optionsDelegate.CurrentValue.EnableCustomFilter)
+            if (_optionsDelegate.CurrentValue.EnableCustomFilter && GetRolesUser().Any(x => x != "Super-User"))
                 query = FilterQueryByCustomFilter(query, out _);
 
             if (customfilters != null)
@@ -213,7 +213,7 @@ namespace SER.Graphql.Reflection.NetCore
             if (customfilters != null)
                 query = FilterWithCustomParams(query, customfilters);
 
-            if (_optionsDelegate.CurrentValue.EnableCustomFilter)
+            if (_optionsDelegate.CurrentValue.EnableCustomFilter && GetRolesUser().Any(x => x != "Super-User"))
                 query = FilterQueryByCustomFilter(query, out _);
             return query.Count();
         }
@@ -234,7 +234,7 @@ namespace SER.Graphql.Reflection.NetCore
             if (customfilters != null)
                 query = FilterWithCustomParams(query, customfilters);
 
-            if (_optionsDelegate.CurrentValue.EnableCustomFilter)
+            if (_optionsDelegate.CurrentValue.EnableCustomFilter && GetRolesUser().Any(x => x != "Super-User"))
                 query = FilterQueryByCustomFilter(query, out _);
 
             return new SumObjectResponse<T>
@@ -294,8 +294,8 @@ namespace SER.Graphql.Reflection.NetCore
                     else
                         companyId = _httpContextAccessor.HttpContext.Session?.GetInt32(nameField)?.ToString();
 
-                    if (typeof(TUser) == typeof(T) || typeToEvaluate == typeof(TUser)) query = query.Where($"{columnName}{propertyInfo.Name}  = @0 OR {columnName}{propertyInfo.Name}  == null", companyId);
-                    else query = query.Where($"{columnName}{propertyInfo.Name}  = @0 OR {columnName}{propertyInfo.Name}  == null", companyId);
+                    if (typeof(TUser) == typeof(T) || typeToEvaluate == typeof(TUser)) query = query.Where($"{columnName}{propertyInfo.Name}  = @0 ", companyId);
+                    else query = query.Where($"{columnName}{propertyInfo.Name}  = @0 ", companyId);
                     break;
                 }
             }
@@ -368,7 +368,7 @@ namespace SER.Graphql.Reflection.NetCore
             _logger.LogWarning($"whereArgs: {whereArgs}");
             query = query.Where(whereArgs.ToString(), args.ToArray());
 
-            if (_optionsDelegate.CurrentValue.EnableCustomFilter)
+            if (_optionsDelegate.CurrentValue.EnableCustomFilter && GetRolesUser().Any(x => x != "Super-User"))
                 query = FilterQueryByCustomFilter(query, out _);
 
             if (!string.IsNullOrEmpty(orderBy))
