@@ -90,8 +90,8 @@ namespace SER.Graphql.Reflection.NetCore.Permissions
         /// <inheritdoc />
         public async ValueTask<INodeVisitor> ValidateAsync(ValidationContext context)
         {
-            var userContext = context.UserContext as IProvideClaimsPrincipal;
-            await AuthorizeAsync(null, context.Schema, userContext, context, null);
+            var userContext = context.UserContext as GraphQLUserContext;
+            await AuthorizeAsync(null, context.Schema, context);
             var operationType = OperationType.Query;
 
             //Console.WriteLine($" ---------------- userContext : {userContext?.User?.Identity?.Name} --------------- ");
@@ -112,7 +112,7 @@ namespace SER.Graphql.Reflection.NetCore.Permissions
                     operationType = astType.Operation;
 
                     var type = context.TypeInfo.GetLastType();
-                    AuthorizeAsync(astType, type, userContext, context, operationType).GetAwaiter().GetResult(); // TODO: need to think of something to avoid this
+                    AuthorizeAsync(astType, type, context).GetAwaiter().GetResult(); // TODO: need to think of something to avoid this
                 }),
 
                 new MatchingNodeVisitor<GraphQLObjectField>((objectFieldAst, context) =>
@@ -120,7 +120,7 @@ namespace SER.Graphql.Reflection.NetCore.Permissions
                     if (context.TypeInfo.GetArgument()?.ResolvedType?.GetNamedType() is IComplexGraphType argumentType && !ShouldBeSkipped(context.Operation, context))
                     {
                         var fieldType = argumentType.GetField(objectFieldAst.Name);
-                        AuthorizeAsync(objectFieldAst, fieldType, userContext, context, operationType).GetAwaiter().GetResult(); // TODO: need to think of something to avoid this
+                        AuthorizeAsync(objectFieldAst, fieldType, context).GetAwaiter().GetResult(); // TODO: need to think of something to avoid this
                     }
                 }),
 
@@ -132,9 +132,9 @@ namespace SER.Graphql.Reflection.NetCore.Permissions
                         return;
 
                     // check target field
-                    AuthorizeAsync(fieldAst, fieldDef, userContext, context, operationType).GetAwaiter().GetResult(); // TODO: need to think of something to avoid this
+                    AuthorizeAsync(fieldAst, fieldDef, context).GetAwaiter().GetResult(); // TODO: need to think of something to avoid this
                     // check returned graph type
-                    AuthorizeAsync(fieldAst, fieldDef.ResolvedType?.GetNamedType(), userContext, context, operationType).GetAwaiter().GetResult(); // TODO: need to think of something to avoid this
+                    AuthorizeAsync(fieldAst, fieldDef.ResolvedType?.GetNamedType(), context).GetAwaiter().GetResult(); // TODO: need to think of something to avoid this
                 }),
 
                 new MatchingNodeVisitor<GraphQLVariable>((variableRef, context) =>
@@ -142,7 +142,7 @@ namespace SER.Graphql.Reflection.NetCore.Permissions
                     if (context.TypeInfo.GetArgument()?.ResolvedType?.GetNamedType() is not IComplexGraphType variableType || ShouldBeSkipped(context.Operation, context))
                         return;
 
-                    AuthorizeAsync(variableRef, variableType, userContext, context, operationType).GetAwaiter().GetResult(); // TODO: need to think of something to avoid this
+                    AuthorizeAsync(variableRef, variableType, context).GetAwaiter().GetResult(); // TODO: need to think of something to avoid this
 
                     // Check each supplied field in the variable that exists in the variable type.
                     // If some supplied field does not exist in the variable type then some other
@@ -156,36 +156,35 @@ namespace SER.Graphql.Reflection.NetCore.Permissions
                         {
                             if (fieldsValues.ContainsKey(field.Name))
                             {
-                                AuthorizeAsync(variableRef, field, userContext, context, operationType).GetAwaiter().GetResult(); // TODO: need to think of something to avoid this
+                                AuthorizeAsync(variableRef, field, context).GetAwaiter().GetResult(); // TODO: need to think of something to avoid this
                             }
                         }
                     }
                 })
             );
         }
-
-
+        
         private async Task AuthorizeAsync(
             ASTNode node,
             IProvideMetadata provider,
-            IProvideClaimsPrincipal userContext,
-            ValidationContext context,
-            OperationType? operationType)
+            ValidationContext context
+            )
         {
             if (provider == null || !provider.IsAuthorizationRequired())
                 return;
 
-            var result = await _evaluator.Evaluate(userContext?.User, context.UserContext, context.Variables, provider.GetPolicies());
+            var result = await _evaluator.Evaluate((context.UserContext as GraphQLUserContext)?.User, context.UserContext as GraphQLUserContext, context.Variables, provider.GetPolicies());
 
             if (result.Succeeded)
                 return;
 
             string errors = string.Join("\n", result.Errors);
 
+            var operationType = context.Operation.Operation;
             context.ReportError(new ValidationError(
                 context.Document.Source,
                 "authorization",
-                $"You are not authorized to run this {operationType?.ToString().ToLower()}.\n{errors}",
+                $"You are not authorized to run this {operationType.ToString().ToLower()}.\n{errors}",
                 node == null ? Array.Empty<ASTNode>() : new ASTNode[] { node }));
         }
     }

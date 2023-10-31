@@ -24,6 +24,7 @@ using GraphQL.SystemTextJson;
 using GraphQL.DI;
 using GraphQL.Authorization;
 using GraphQL.MicrosoftDI;
+using GraphQL.Resolvers;
 
 namespace SER.Graphql.Reflection.NetCore.Custom
 {
@@ -45,7 +46,7 @@ namespace SER.Graphql.Reflection.NetCore.Custom
             => AddConfigGraphQl<TContext, TUser, TRole, object>(services, options);
 
         public static IServiceCollection AddConfigGraphQl<TContext, TUser, TRole, TUserRole>(this IServiceCollection services, Action<ExecutionOptions> options)
-            
+
         where TContext : DbContext
         where TUser : class
         where TRole : class
@@ -58,12 +59,13 @@ namespace SER.Graphql.Reflection.NetCore.Custom
             services.AddSingleton<TableMetadata>();
             services.AddSingleton<IDatabaseMetadata, DatabaseMetadata<TContext>>();
 
-            services.AddScoped<GraphQLQuery<TUser, TRole, TUserRole>>();
-            services.AddScoped<IGraphRepository<Audit>, GenericGraphRepository<Audit, TContext, TUser, TRole, TUserRole>>();
+            services.AddSingleton<GraphQLQuery<TUser, TRole, TUserRole>>();
+            services.AddSingleton<IGraphRepository<Audit>, GenericGraphRepository<Audit, TContext, TUser, TRole, TUserRole>>();
 
-            services.AddScoped<FillDataExtensions>();
-            services.AddScoped<ISchema, AppSchema<TUser, TRole, TUserRole>>();
-            services.AddTransient<ISERFieldResolver<TUser, TRole, TUserRole>, MyFieldResolver<TUser, TRole, TUserRole>>();           
+            services.AddSingleton<FillDataExtensions>();
+            services.AddSingleton<ISchema, AppSchema<TUser, TRole, TUserRole>>();
+            services.AddSingleton<ISERFieldResolver<TUser, TRole, TUserRole>, MyFieldResolver<TUser, TRole, TUserRole>>();
+            services.AddSingleton<IFieldResolver, CUDResolver>();
 
             services.AddLogging(builder => builder.AddConsole());
 
@@ -72,7 +74,7 @@ namespace SER.Graphql.Reflection.NetCore.Custom
                 .ConfigureExecutionOptions(options)
                 .AddSystemTextJson()
                 .AddDataLoader() // Add required services for DataLoader support
-                .AddUserContextBuilder(ctx => new GraphQLUserContext { User = ctx.User })
+                .AddUserContextBuilder(ctx => new GraphQLUserContext(ctx.User))
                 .AddGraphTypes()
             );
 
@@ -82,23 +84,23 @@ namespace SER.Graphql.Reflection.NetCore.Custom
 
             if (typeof(IdentityUser).IsAssignableFrom(typeof(TUser)))
             {
-                services.AddScoped<IGraphRepository<TUser>, GenericGraphRepository<TUser, TContext, TUser, TRole, TUserRole>>();
+                services.AddSingleton<IGraphRepository<TUser>, GenericGraphRepository<TUser, TContext, TUser, TRole, TUserRole>>();
                 config.UseUser<TUser>();
             }
 
             if (typeof(IdentityRole).IsAssignableFrom(typeof(TRole)))
             {
-                services.AddScoped<IGraphRepository<TRole>, GenericGraphRepository<TRole, TContext, TUser, TRole, TUserRole>>();
+                services.AddSingleton<IGraphRepository<TRole>, GenericGraphRepository<TRole, TContext, TUser, TRole, TUserRole>>();
                 config.UseRole<TRole>();
             }
 
             if (typeof(IdentityUserRole<string>).IsAssignableFrom(typeof(TUserRole)))
             {
-                services.AddScoped<IGraphRepository<TUserRole>, GenericGraphRepository<TUserRole, TContext, TUser, TRole, TUserRole>>();
+                services.AddSingleton<IGraphRepository<TUserRole>, GenericGraphRepository<TUserRole, TContext, TUser, TRole, TUserRole>>();
                 config.UseUserRole<TUserRole>();
             }
 
-            services.AddScoped<IGraphRepository<IdentityRoleClaim<string>>, GenericGraphRepository<IdentityRoleClaim<string>, TContext, TUser, TRole, TUserRole>>();
+            services.AddSingleton<IGraphRepository<IdentityRoleClaim<string>>, GenericGraphRepository<IdentityRoleClaim<string>, TContext, TUser, TRole, TUserRole>>();
             AddScopedModelsDynamic<TContext, TUser, TRole, TUserRole>(services);
 
 
@@ -138,7 +140,7 @@ namespace SER.Graphql.Reflection.NetCore.Custom
                 var interfaceType = typeof(IGraphRepository<>).MakeGenericType(new Type[] { type });
                 var inherateType = typeof(GenericGraphRepository<,,,,>).MakeGenericType(new Type[] { type, typeof(TContext),
                     typeof(TUser),typeof(TRole), typeof(TUserRole)});
-                var serviceLifetime = Microsoft.Extensions.DependencyInjection.ServiceLifetime.Scoped;
+                var serviceLifetime = Microsoft.Extensions.DependencyInjection.ServiceLifetime.Singleton;
                 // Console.WriteLine($"Dependencia IGraphRepository registrada type {type.Name}");
                 services.TryAdd(new ServiceDescriptor(interfaceType, inherateType, serviceLifetime));
 

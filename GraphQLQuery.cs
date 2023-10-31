@@ -99,7 +99,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                     Name = $"{friendlyTableName}_list",
                     Type = listType.GetType(),
                     ResolvedType = listType,
-                    Resolver = _fieldResolver, 
+                    Resolver = _fieldResolver,
                     Arguments = new QueryArguments(tableType.TableArgs)
                 });
 
@@ -108,7 +108,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                     Name = $"{friendlyTableName}_count",
                     Type = countTableType.GetType(),
                     ResolvedType = countTableType,
-                    Resolver = _fieldResolver, 
+                    Resolver = _fieldResolver,
                     Arguments = new QueryArguments(countTableType.TableArgs)
                 });
 
@@ -117,7 +117,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                     Name = $"{friendlyTableName}_sum",
                     Type = ttype,
                     ResolvedType = sumTableType,
-                    Resolver = _fieldResolver, 
+                    Resolver = _fieldResolver,
                     Arguments = new QueryArguments(sumTableType.TableArgs)
                 });
             }

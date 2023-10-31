@@ -35,6 +35,10 @@ namespace SER.Graphql.Reflection.NetCore.Custom
         private FillDataExtensions _fillDataExtensions;
         private readonly ILogger _logger;
 
+        private const string MEDIATYPE_GRAPHQLJSON = "application/graphql+json"; // deprecated
+        private const string MEDIATYPE_JSON = "application/json";
+        private const string MEDIATYPE_GRAPHQL = "application/graphql";
+
         public GraphQLHttpMiddleware(
             RequestDelegate next,
             PathString path,
@@ -85,7 +89,7 @@ namespace SER.Graphql.Reflection.NetCore.Custom
 
                 switch (mediaTypeHeader.MediaType)
                 {
-                    case MediaType.JSON:
+                    case MEDIATYPE_JSON:
                         IList<GraphQLRequest> deserializationResult;
                         try
                         {
@@ -122,7 +126,7 @@ namespace SER.Graphql.Reflection.NetCore.Custom
                             bodyGQLBatchRequest = deserializationResult;
                         break;
 
-                    case MediaType.GRAPH_QL:
+                    case MEDIATYPE_GRAPHQL:
                         bodyGQLRequest = await DeserializeFromGraphBodyAsync(httpRequest.Body);
                         break;
 
@@ -177,7 +181,7 @@ namespace SER.Graphql.Reflection.NetCore.Custom
             var userContextBuilder = context.RequestServices.GetService<IUserContextBuilder>();
             var userContext = userContextBuilder == null
                 ? new Dictionary<string, object>() // in order to allow resolvers to exchange their state through this object
-                : await userContextBuilder.BuildUserContext(context);
+                : await userContextBuilder.BuildUserContextAsync(context, null);
 
             var rules = context.RequestServices.GetServices<IValidationRule>();
 
@@ -203,7 +207,7 @@ namespace SER.Graphql.Reflection.NetCore.Custom
                 await RequestExecutingAsync(gqlRequest);
                 var result = await ExecuteRequestAsync(gqlRequest, userContext, executer, context.RequestServices, rules, cancellationToken);
 
-                await RequestExecutedAsync(new GraphQLRequestExecutionResult(gqlRequest, result, stopwatch.Elapsed));
+                //await RequestExecutedAsync(new GraphQLRequestExecutionResult(gqlRequest, result, stopwatch.Elapsed));
 
                 await WriteResponseAsync(context.Response, _serializer, cancellationToken, result);
             }
@@ -219,7 +223,7 @@ namespace SER.Graphql.Reflection.NetCore.Custom
                     await RequestExecutingAsync(gqlRequestInBatch, i);
                     var result = await ExecuteRequestAsync(gqlRequestInBatch, userContext, executer, context.RequestServices, rules, cancellationToken);
 
-                    await RequestExecutedAsync(new GraphQLRequestExecutionResult(gqlRequestInBatch, result, stopwatch.Elapsed, i));
+                    //await RequestExecutedAsync(new GraphQLRequestExecutionResult(gqlRequestInBatch, result, stopwatch.Elapsed, i));
 
                     executionResults[i] = result;
                 }
@@ -241,7 +245,7 @@ namespace SER.Graphql.Reflection.NetCore.Custom
             => WriteErrorResponseAsync(context, $"Invalid 'Content-Type' header: value '{context.Request.ContentType}' could not be parsed.", HttpStatusCode.UnsupportedMediaType);
 
         protected virtual Task HandleInvalidContentTypeErrorAsync(HttpContext context)
-            => WriteErrorResponseAsync(context, $"Invalid 'Content-Type' header: non-supported media type '{context.Request.ContentType}'. Must be of '{MediaType.JSON}', '{MediaType.GRAPH_QL}' or '{MediaType.FORM}'. {DOCS_URL}", HttpStatusCode.UnsupportedMediaType);
+            => WriteErrorResponseAsync(context, $"Invalid 'Content-Type' header: non-supported media type '{context.Request.ContentType}'. Must be of '{MEDIATYPE_JSON}', '{MEDIATYPE_GRAPHQL}' or body form. {DOCS_URL}", HttpStatusCode.UnsupportedMediaType);
 
         protected virtual Task HandleInvalidHttpMethodErrorAsync(HttpContext context)
             => WriteErrorResponseAsync(context, $"Invalid HTTP method. Only GET and POST are supported. {DOCS_URL}", HttpStatusCode.MethodNotAllowed);
@@ -273,12 +277,7 @@ namespace SER.Graphql.Reflection.NetCore.Custom
             // nothing to do in this middleware
             return Task.CompletedTask;
         }
-
-        protected virtual Task RequestExecutedAsync(in GraphQLRequestExecutionResult requestExecutionResult)
-        {
-            // nothing to do in this middleware
-            return Task.CompletedTask;
-        }
+        
 
         private async Task WriteErrorResponseAsync(HttpContext context, string errorMessage, HttpStatusCode httpStatusCode /* BadRequest */)
         {

@@ -31,7 +31,7 @@ namespace SER.Graphql.Reflection.NetCore
 
             Query = services.GetRequiredService<GraphQLQuery<TUser, TRole, TUserRole>>();
             Mutation = services.GetRequiredService<AppMutation>();
-            Subscription = services.GetRequiredService<AppSubscriptions>();
+            //Subscription = services.GetRequiredService<AppSubscriptions>();
 
             RegisterType(new MyBooleanGraphType());
             RegisterType(new MyIntGraphType());

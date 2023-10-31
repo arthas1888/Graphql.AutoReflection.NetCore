@@ -10,9 +10,14 @@ using System.Threading.Tasks;
 
 namespace SER.Graphql.Reflection.NetCore
 {
-    public class GraphQLUserContext : Dictionary<string, object>, IProvideClaimsPrincipal
+    public class GraphQLUserContext : Dictionary<string, object>
     {
         public ClaimsPrincipal User { get; set; }
+
+        public GraphQLUserContext(ClaimsPrincipal user)
+        {
+            User = user;
+        }
 
     }
 }

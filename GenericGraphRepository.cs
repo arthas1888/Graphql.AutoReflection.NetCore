@@ -46,7 +46,7 @@ namespace SER.Graphql.Reflection.NetCore
             where TRole : class
             where TUserRole : class
     {
-        private readonly TContext _context;
+        //private readonly TContext _context;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly FillDataExtensions _fillDataExtensions;
         private readonly IWebHostEnvironment _env;
@@ -67,14 +67,14 @@ namespace SER.Graphql.Reflection.NetCore
         });
         private readonly IOptionsMonitor<SERGraphQlOptions> _optionsDelegate;
 
-        public GenericGraphRepository(TContext db,
+        public GenericGraphRepository(
             IHttpContextAccessor httpContextAccessor,
             FillDataExtensions fillDataExtensions,
             IWebHostEnvironment env,
             IConfiguration config,
             IOptionsMonitor<SERGraphQlOptions> optionsDelegate)
         {
-            _context = db;
+            //_context = db;
             _config = config;
             _httpContextAccessor = httpContextAccessor;
             model = typeof(T).Name;
@@ -111,29 +111,33 @@ namespace SER.Graphql.Reflection.NetCore
                 x.Type == Claims.Role).Select(x => x.Value).ToList();
         }
 
-        public async Task<T> GetFirstAsync(string alias, List<string> includeExpressions = null,
+        public async Task<T> GetFirstAsync(IResolveFieldContext context, string alias, List<string> includeExpressions = null,
             string whereArgs = "", Dictionary<string, object> customfilters = null, params object[] args)
         {
-            var entity = await GetQuery(alias, includeExpressions: includeExpressions,
+            var entity = await GetQuery(context, alias, includeExpressions: includeExpressions,
                first: 1, whereArgs: whereArgs, customfilters: customfilters, args: args)
                .AsNoTracking().FirstOrDefaultAsync();
             if (entity == null) return null;
             return entity;
         }
 
-        public async Task<IEnumerable<T>> GetAllAsync(string alias, List<string> includeExpressions = null,
+        public async Task<IEnumerable<T>> GetAllAsync(IResolveFieldContext context, string alias, List<string> includeExpressions = null,
             string orderBy = "", string whereArgs = "", int? take = null, int? offset = null, Dictionary<string, object> customfilters = null, params object[] args)
         {
-            return await GetQuery(alias, includeExpressions: includeExpressions, orderBy: orderBy,
+            return await GetQuery(context, alias, includeExpressions: includeExpressions, orderBy: orderBy,
                 first: take, offset: offset, whereArgs: whereArgs, customfilters: customfilters, args: args)
                 .AsNoTracking().ToListAsync();
         }
 
-        public IQueryable<T> GetQuery(string alias, List<string> includeExpressions = null,
+        public IQueryable<T> GetQuery(IResolveFieldContext context, string alias, List<string> includeExpressions = null,
             string orderBy = "", string whereArgs = "", int? first = null, int? offset = null, Dictionary<string, object> customfilters = null,
             params object[] args)
         {
-            IQueryable<T> query = GetModel;
+            var scope = context.RequestServices.CreateScope();
+            var services = scope.ServiceProvider;
+            var dbContext = services.GetRequiredService<TContext>();
+
+            IQueryable<T> query = GetModel(dbContext);
 
             if (includeExpressions != null && includeExpressions.Count > 0)
             {
@@ -197,10 +201,14 @@ namespace SER.Graphql.Reflection.NetCore
             return query;
         }
 
-        public int GetCountQuery(List<string> includeExpressions = null,
+        public int GetCountQuery(IResolveFieldContext context, List<string> includeExpressions = null,
            string whereArgs = "", Dictionary<string, object> customfilters = null, params object[] args)
         {
-            IQueryable<T> query = GetModel;
+            var scope = context.RequestServices.CreateScope();
+            var services = scope.ServiceProvider;
+            var dbContext = services.GetRequiredService<TContext>();
+
+            IQueryable<T> query = GetModel(dbContext);
 
             if (includeExpressions != null && includeExpressions.Count > 0)
             {
@@ -218,10 +226,14 @@ namespace SER.Graphql.Reflection.NetCore
             return query.Count();
         }
 
-        public SumObjectResponse<T> GetSumQuery(string param, List<string> includeExpressions = null,
+        public SumObjectResponse<T> GetSumQuery(IResolveFieldContext context, string param, List<string> includeExpressions = null,
            string whereArgs = "", Dictionary<string, object> customfilters = null, params object[] args)
         {
-            IQueryable<T> query = GetModel;
+            var scope = context.RequestServices.CreateScope();
+            var services = scope.ServiceProvider;
+            var dbContext = services.GetRequiredService<TContext>();
+
+            IQueryable<T> query = dbContext.Set<T>();
 
             if (includeExpressions != null && includeExpressions.Count > 0)
             {
@@ -385,11 +397,11 @@ namespace SER.Graphql.Reflection.NetCore
         }
 
 
-        public async Task<T> GetByIdAsync(string alias, int id, List<string> includeExpressions = null,
+        public async Task<T> GetByIdAsync(IResolveFieldContext context, string alias, int id, List<string> includeExpressions = null,
           string whereArgs = "", Dictionary<string, object> customfilters = null, params object[] args)
         {
             if (id == 0) return null;
-            var entity = await GetQuery(alias, includeExpressions: includeExpressions,
+            var entity = await GetQuery(context, alias, includeExpressions: includeExpressions,
                 first: 1, whereArgs: whereArgs, customfilters: customfilters, args: args)
                 .AsNoTracking().FirstOrDefaultAsync();
 
@@ -398,32 +410,29 @@ namespace SER.Graphql.Reflection.NetCore
             return entity;
         }
 
-        public async Task<T> GetByIdAsync(string alias, string id, List<string> includeExpressions = null,
+        public async Task<T> GetByIdAsync(IResolveFieldContext context, string alias, string id, List<string> includeExpressions = null,
          string whereArgs = "", Dictionary<string, object> customfilters = null, params object[] args)
         {
             if (string.IsNullOrEmpty(id)) return null;
-            var entity = await GetQuery(alias, includeExpressions: includeExpressions,
+            var entity = await GetQuery(context, alias, includeExpressions: includeExpressions,
                 first: 1, whereArgs: whereArgs, customfilters: customfilters, args: args)
                 .AsNoTracking().FirstOrDefaultAsync();
             if (entity == null) return null;
             return entity;
         }
 
-        public async Task<T> GetByIdAsync(string alias, Guid? id, List<string> includeExpressions = null,
+        public async Task<T> GetByIdAsync(IResolveFieldContext context, string alias, Guid? id, List<string> includeExpressions = null,
          string whereArgs = "", Dictionary<string, object> customfilters = null, params object[] args)
         {
             if (id == null) return null;
-            var entity = await GetQuery(alias, includeExpressions: includeExpressions,
+            var entity = await GetQuery(context, alias, includeExpressions: includeExpressions,
                 first: 1, whereArgs: whereArgs, customfilters: customfilters, args: args)
                 .AsNoTracking().FirstOrDefaultAsync();
             if (entity == null) return null;
             return entity;
         }
 
-        private DbSet<T> GetModel
-        {
-            get { return _context.Set<T>(); }
-        }
+        private DbSet<T> GetModel(TContext dbContext) => dbContext.Set<T>();
 
         /// <summary>
         /// crea un instanica tipo T en la base de datos
@@ -433,10 +442,14 @@ namespace SER.Graphql.Reflection.NetCore
         /// <param name="sendObjFirebase"></param>
         /// <param name="includeExpressions"></param>
         /// <returns></returns>
-        public async Task<T> Create(T entity, string alias = "", bool sendObjFirebase = true, List<string> includeExpressions = null)
+        public async Task<T> Create(IResolveFieldContext context, T entity, string alias = "", bool sendObjFirebase = true, List<string> includeExpressions = null)
         {
             //var objstr = JsonSerializer.Serialize(entity);
             //_logger.LogInformation($"----------------------------objstr {objstr}");
+
+            var scope = context.RequestServices.CreateScope();
+            var services = scope.ServiceProvider;
+            var dbContext = services.GetRequiredService<TContext>();
 
             var cacheKeySize = string.Format("_{0}_size", model);
             _cache.Remove(cacheKeySize);
@@ -445,21 +458,21 @@ namespace SER.Graphql.Reflection.NetCore
             {
                 entity.GetType().GetProperty("created_by_id")?.SetValue(entity, GetCurrentUser(), null);
 
-                var obj = _context.Add(entity);
-                _context.SaveChanges();
+                var obj = dbContext.Add(entity);
+                dbContext.SaveChanges();
 
                 if (_optionsDelegate.CurrentValue.EnableAudit)
                 {
-                    await _cRepositoryLog.AddLog(_context, new AuditBinding()
+                    await _cRepositoryLog.AddLog(dbContext, new AuditBinding()
                     {
                         action = AudiState.CREATE,
                         objeto = typeof(T).Name,
-                    }, id: GetKey(entity), commit: true);
+                    }, id: GetKey(dbContext, entity), commit: true);
                 }
 
-                includeExpressions?.ForEach(x => _context.Entry(obj.Entity).Reference(x).Load());
+                includeExpressions?.ForEach(x => dbContext.Entry(obj.Entity).Reference(x).Load());
 
-                if (sendObjFirebase) SendStatus(GraphGrpcStatus.CREATE, GetKey(entity));
+                if (sendObjFirebase) SendStatus(GraphGrpcStatus.CREATE, GetKey(dbContext, entity));
                 if (!string.IsNullOrEmpty(GetCurrentUser()))
                     _handleMsg.GetStream().OnNext(entity);
 
@@ -468,15 +481,15 @@ namespace SER.Graphql.Reflection.NetCore
             catch (ValidationException exc)
             {
                 _logger.LogError(exc, $"{nameof(Create)} validation exception: {exc?.Message}");
-                _fillDataExtensions.Add($"{(string.IsNullOrEmpty(alias) ? nameModel : alias)}", $"{exc?.Message }");
-                _context.Entry(entity).State = EntityState.Detached;
+                _fillDataExtensions.Add($"{(string.IsNullOrEmpty(alias) ? nameModel : alias)}", $"{exc?.Message}");
+                dbContext.Entry(entity).State = EntityState.Detached;
 
             }
             catch (DbUpdateException e)
             {
                 _logger.LogError(e, $"{nameof(Create)} db update error: {e?.InnerException?.Message}");
-                _fillDataExtensions.Add($"{(string.IsNullOrEmpty(alias) ? nameModel : alias)}", $"{ e.InnerException?.Message }");
-                _context.Entry(entity).State = EntityState.Detached;
+                _fillDataExtensions.Add($"{(string.IsNullOrEmpty(alias) ? nameModel : alias)}", $"{e.InnerException?.Message}");
+                dbContext.Entry(entity).State = EntityState.Detached;
             }
             return entity;
         }
@@ -508,23 +521,23 @@ namespace SER.Graphql.Reflection.NetCore
         /// </summary>
         /// <param name="entity"></param>
         /// <returns></returns>
-        public virtual string GetKey(T entity)
+        public virtual string GetKey(TContext dbContext, T entity)
         {
-            var keyName = _context.Model.FindEntityType(typeof(T)).FindPrimaryKey()?.Properties
+            var keyName = dbContext.Model.FindEntityType(typeof(T)).FindPrimaryKey()?.Properties
                 .Select(x => x.Name).FirstOrDefault(); // .Single();
             return entity.GetType().GetProperty(keyName).GetValue(entity, null).ToString();
         }
 
-        public Task<T> Update(object id, T entity, string alias = "", bool sendObjFirebase = true, List<string> includeExpressions = null)
+        public Task<T> Update(IResolveFieldContext context, object id, T entity, string alias = "", bool sendObjFirebase = true, List<string> includeExpressions = null)
         {
             throw new NotImplementedException();
         }
 
-        public async Task<T> Update(object id, Dictionary<string, object> entity, Dictionary<string, object> dict, string alias = "", bool sendObjFirebase = true, List<string> includeExpressions = null)
+        public async Task<T> Update(IResolveFieldContext context, object id, Dictionary<string, object> entity, Dictionary<string, object> dict, string alias = "", bool sendObjFirebase = true, List<string> includeExpressions = null)
         {
             var obj = entity.DictToObject<T>();
-            
-            return await Update(id, obj, dict, alias: alias, sendObjFirebase: sendObjFirebase, includeExpressions: includeExpressions);
+
+            return await Update(context, id, obj, dict, alias: alias, sendObjFirebase: sendObjFirebase, includeExpressions: includeExpressions);
         }
 
         /// <summary>
@@ -537,28 +550,32 @@ namespace SER.Graphql.Reflection.NetCore
         /// <param name="sendObjFirebase"></param>
         /// <param name="includeExpressions"></param>
         /// <returns></returns>
-        public async Task<T> Update(object id, T entity, Dictionary<string, object> dict, string alias = "", bool sendObjFirebase = true, List<string> includeExpressions = null)
+        public async Task<T> Update(IResolveFieldContext context, object id, T entity, Dictionary<string, object> dict, string alias = "", bool sendObjFirebase = true, List<string> includeExpressions = null)
         {
             //var obj = GetModel.Find(id);
+            var scope = context.RequestServices.CreateScope();
+            var services = scope.ServiceProvider;
+            var dbContext = services.GetRequiredService<TContext>();
+
             T obj = null;
             if (id is string)
             {
                 if (Guid.TryParse(id.ToString(), out Guid @guid))
                 {
-                    var keyName = _context.Model.FindEntityType(typeof(T)).FindPrimaryKey()?.Properties
+                    var keyName = dbContext.Model.FindEntityType(typeof(T)).FindPrimaryKey()?.Properties
                         .Select(x => x.Name).FirstOrDefault();
                     var pi = typeof(T).GetProperty(keyName);
                     var expToEvaluate = EqualPredicate<T>(typeof(T), keyName, @guid, pi.PropertyType);
-                    obj = GetModel.FirstOrDefault(expToEvaluate);
+                    obj = GetModel(dbContext).FirstOrDefault(expToEvaluate);
                 }
                 else
                 {
-                    obj = GetModel.Find(id);
+                    obj = GetModel(dbContext).Find(id);
                 }
             }
             else
             {
-                obj = GetModel.Find(id);
+                obj = GetModel(dbContext).Find(id);
             }
 
             if (obj != null)
@@ -586,12 +603,12 @@ namespace SER.Graphql.Reflection.NetCore
                                     propertyInfo.PropertyType.GetGenericArguments()[0] : propertyInfo.PropertyType;
 
                             if (isList && type.BaseType == typeof(object) && newValue != null)
-                                DeleteRelationsM2M(type, id);
+                                DeleteRelationsM2M(dbContext, type, id);
 
-                            //Console.WriteLine($"___________TRACEEEEEEEEEEEEEEEEE____________: key: {propertyInfo.Name} {oldValue} {newValue}");
+                            //Console.WriteLine($"___________TRACEEEEEEEEEEEEEEEEE____________: key: {propertyInfo.Name} {oldValue} {newValue} isList {isList} BaseType {type.BaseType}");
                             if (isList)
                                 if (type.BaseType == typeof(object) && newValue != null) propertyInfo.SetValue(obj, newValue, null);
-                                else UpdateList(type, id, values.Value, newValue);
+                                else UpdateList(dbContext, type, id, values.Value, newValue);
                             else
                                 propertyInfo.SetValue(obj, newValue, null);
 
@@ -604,7 +621,7 @@ namespace SER.Graphql.Reflection.NetCore
 
                     if (_optionsDelegate.CurrentValue.EnableAudit)
                     {
-                        var modified = await _cRepositoryLog.AddLog(_context, new AuditBinding()
+                        var modified = await _cRepositoryLog.AddLog(dbContext, new AuditBinding()
                         {
                             action = AudiState.UPDATE,
                             objeto = typeof(T).Name,
@@ -618,8 +635,8 @@ namespace SER.Graphql.Reflection.NetCore
                     }
 
                     //_context.Entry(obj).State = EntityState.Modified;
-                    await _context.SaveChangesAsync();
-                    includeExpressions?.ForEach(x => _context.Entry(obj).Reference(x).Load());
+                    await dbContext.SaveChangesAsync();
+                    includeExpressions?.ForEach(x => dbContext.Entry(obj).Reference(x).Load());
 
                     if (sendObjFirebase) SendStatus(GraphGrpcStatus.UPDATE, id.ToString());
                     if (!string.IsNullOrEmpty(GetCurrentUser()))
@@ -629,27 +646,27 @@ namespace SER.Graphql.Reflection.NetCore
                 catch (ValidationException exc)
                 {
                     _logger.LogError(exc, $"{nameof(Update)} validation exception: {exc?.Message}");
-                    _fillDataExtensions.Add($"{(string.IsNullOrEmpty(alias) ? nameModel : alias)}", @$"{id} => { exc?.Message}");
-                    _context.Entry(obj).State = EntityState.Detached;
+                    _fillDataExtensions.Add($"{(string.IsNullOrEmpty(alias) ? nameModel : alias)}", @$"{id} => {exc?.Message}");
+                    dbContext.Entry(obj).State = EntityState.Detached;
 
                 }
                 catch (DbUpdateException e)
                 {
-                    _context.Entry(obj).State = EntityState.Detached;
+                    dbContext.Entry(obj).State = EntityState.Detached;
                     _fillDataExtensions.Add($"{(string.IsNullOrEmpty(alias) ? nameModel : alias)}", $"{id} => {e.InnerException?.Message}");
                 }
             }
             return obj;
         }
 
-        private void UpdateList(Type type, object parentId, dynamic values, dynamic entities)
+        private void UpdateList(TContext dbContext, Type type, object parentId, dynamic values, dynamic entities)
         {
             try
             {
                 GetType()
                     .GetMethod("UpdateListAsync")
                     .MakeGenericMethod(type)
-                    .Invoke(this, parameters: new object[] { parentId, values, entities });
+                    .Invoke(this, parameters: new object[] { dbContext, parentId, values, entities });
             }
             catch (Exception e)
             {
@@ -657,11 +674,11 @@ namespace SER.Graphql.Reflection.NetCore
             }
         }
 
-        public void UpdateListAsync<M>(object parentId, ICollection<object> values, List<M> entities) where M : class
+        public void UpdateListAsync<M>(TContext dbContext, object parentId, ICollection<object> values, List<M> entities) where M : class
         {
-            var iQueryable = _context.Set<M>();
+            var iQueryable = dbContext.Set<M>();
             var keyProperty = typeof(M).GetProperties();
-            var keyName = _context.Model.FindEntityType(typeof(M)).FindPrimaryKey()?.Properties
+            var keyName = dbContext.Model.FindEntityType(typeof(M)).FindPrimaryKey()?.Properties
                         .Select(x => x.Name).FirstOrDefault();
             var paramFK = "";
 
@@ -764,14 +781,14 @@ namespace SER.Graphql.Reflection.NetCore
             return JsonDocument.Parse(response, documentOptions).RootElement;
         }
 
-        private void DeleteRelationsM2M(Type type, object parentId)
+        private void DeleteRelationsM2M(TContext dbContext, Type type, object parentId)
         {
             try
             {
                 GetType()
                     .GetMethod("DeleteRelations")
                     .MakeGenericMethod(type)
-                    .Invoke(this, parameters: new object[] { parentId });
+                    .Invoke(this, parameters: new object[] { dbContext, parentId });
             }
             catch (Exception e)
             {
@@ -779,9 +796,9 @@ namespace SER.Graphql.Reflection.NetCore
             }
         }
 
-        public void DeleteRelations<M>(object parentId) where M : class
+        public void DeleteRelations<M>(TContext dbContext, object parentId) where M : class
         {
-            var iQueryable = _context.Set<M>();
+            var iQueryable = dbContext.Set<M>();
             var keyProperty = typeof(M).GetProperties();
             var paramFK = "";
             Type valueType = null;
@@ -845,27 +862,31 @@ namespace SER.Graphql.Reflection.NetCore
             return Expression.Lambda<Func<M, bool>>(exp, parameter);
         }
 
-        public async Task<T> Delete(object id, string alias = "", bool sendObjFirebase = true)
+        public async Task<T> Delete(IResolveFieldContext context, object id, string alias = "", bool sendObjFirebase = true)
         {
+            var scope = context.RequestServices.CreateScope();
+            var services = scope.ServiceProvider;
+            var dbContext = services.GetRequiredService<TContext>();
+
             T obj = null;
             if (id is string)
             {
                 if (Guid.TryParse(id.ToString(), out Guid @guid))
                 {
-                    var keyName = _context.Model.FindEntityType(typeof(T)).FindPrimaryKey()?.Properties
+                    var keyName = dbContext.Model.FindEntityType(typeof(T)).FindPrimaryKey()?.Properties
                         .Select(x => x.Name).FirstOrDefault();
                     var pi = typeof(T).GetProperty(keyName);
                     var expToEvaluate = EqualPredicate<T>(typeof(T), keyName, @guid, pi.PropertyType);
-                    obj = GetModel.FirstOrDefault(expToEvaluate);
+                    obj = GetModel(dbContext).FirstOrDefault(expToEvaluate);
                 }
                 else
                 {
-                    obj = GetModel.Find(id);
+                    obj = GetModel(dbContext).Find(id);
                 }
             }
             else
             {
-                obj = GetModel.Find(id);
+                obj = GetModel(dbContext).Find(id);
             }
 
             if (obj != null)
@@ -874,12 +895,12 @@ namespace SER.Graphql.Reflection.NetCore
                 try
                 {
                     //GetModel.Remove(obj);
-                    _context.Entry(obj).State = EntityState.Deleted;
-                    _context.SaveChanges();
+                    dbContext.Entry(obj).State = EntityState.Deleted;
+                    dbContext.SaveChanges();
 
                     if (_optionsDelegate.CurrentValue.EnableAudit)
                     {
-                        await _cRepositoryLog.AddLog(_context, new AuditBinding()
+                        await _cRepositoryLog.AddLog(dbContext, new AuditBinding()
                         {
                             action = AudiState.DELETE,
                             objeto = typeof(T).Name,
@@ -889,12 +910,12 @@ namespace SER.Graphql.Reflection.NetCore
                 catch (ValidationException exc)
                 {
                     _logger.LogError(exc, $"{nameof(Update)} validation exception: {exc?.Message}");
-                    _context.Entry(obj).State = EntityState.Detached;
+                    dbContext.Entry(obj).State = EntityState.Detached;
                     _fillDataExtensions.Add($"{(string.IsNullOrEmpty(alias) ? nameModel : alias)}", @$"{id} => {exc?.Message}");
                 }
                 catch (DbUpdateException e)
                 {
-                    _context.Entry(obj).State = EntityState.Detached;
+                    dbContext.Entry(obj).State = EntityState.Detached;
                     _fillDataExtensions.Add($"{(string.IsNullOrEmpty(alias) ? nameModel : alias)}", $"{id} => {e.InnerException?.Message}");
                 }
 

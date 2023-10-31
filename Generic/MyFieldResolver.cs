@@ -79,7 +79,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                     Console.WriteLine($"whereArgs list: {whereArgs} args {string.Join(", ", args)} ");
                     
                     return service
-                        .GetAllAsync(alias, whereArgs: whereArgs.ToString(),
+                        .GetAllAsync(context, alias, whereArgs: whereArgs.ToString(),
                             take: context.GetArgument<object>("first")?.GetRealValue() as int?, offset: context.GetArgument<object>("page")?.GetRealValue() as int?,
                             orderBy: context.GetArgument<string>("orderBy"),
                             includeExpressions: includes, args: args.ToArray())
@@ -93,7 +93,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                         arguments: context.Arguments, mainType: type);
                     Console.WriteLine($"whereArgs count: {whereArgs}");
 
-                    return service.GetCountQuery(whereArgs: whereArgs.ToString(),
+                    return service.GetCountQuery(context, whereArgs: whereArgs.ToString(),
                         includeExpressions: includes, args: args.ToArray());
                 }
                 else if (context.FieldAst.Name.StringValue.Contains("_sum"))
@@ -122,7 +122,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                         return null;
                     }
 
-                    return service.GetSumQuery(param: param, whereArgs: whereArgs.ToString(), includeExpressions: includes, args: args.ToArray());
+                    return service.GetSumQuery(context, param: param, whereArgs: whereArgs.ToString(), includeExpressions: includes, args: args.ToArray());
 
                 }
                 else
@@ -135,7 +135,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                     Console.WriteLine($"whereArgs single obj: {whereArgs}");
 
                     var dbEntity = service
-                        .GetFirstAsync(alias, whereArgs: whereArgs.ToString(),
+                        .GetFirstAsync(context, alias, whereArgs: whereArgs.ToString(),
                             includeExpressions: includes, args: args.ToArray())
                         .Result;
 

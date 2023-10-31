@@ -68,27 +68,7 @@ namespace SER.Graphql.Reflection.NetCore.Permissions
         }
 
 
-        public Task BeforeHandleAsync(MessageHandlingContext context)
-        {
-            if (context.Message.Type == MessageType.GQL_CONNECTION_INIT)
-            {
-                var payload = context.Message.Payload as JObject;
-                if (payload != null && payload.TryGetValue("Authorization", StringComparison.CurrentCulture, out JToken token))
-                {
-                    var auth = payload.Value<string>("Authorization");
-                    // Save the user to the http context
-                    _httpContextAccessor.HttpContext.User = BuildClaimsPrincipal(auth.Split("Bearer ")[1]);
-                }
-            }
-
-            // Always insert the http context user into the message handling context properties
-            // Note: any IDisposable item inside the properties bag will be disposed after this message is handled!
-            //  So do not insert such items here, but use something like 'context[PRINCIPAL_KEY] = [...]'
-            context.Properties[PRINCIPAL_KEY] = _httpContextAccessor.HttpContext.User;
-            //context[PRINCIPAL_KEY] = _httpContextAccessor.HttpContext.User;
-
-            return Task.CompletedTask;
-        }
+        public Task BeforeHandleAsync(MessageHandlingContext context) => Task.CompletedTask;
 
         public Task HandleAsync(MessageHandlingContext context) => Task.CompletedTask;
         public Task AfterHandleAsync(MessageHandlingContext context) => Task.CompletedTask;

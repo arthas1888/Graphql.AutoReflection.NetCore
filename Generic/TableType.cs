@@ -51,7 +51,7 @@ namespace SER.Graphql.Reflection.NetCore
             this.ValidateCUDPermissions(permission);
             this.ValidatePermissions(permission, friendlyTableName, mainTable.Type, _optionsDelegate);
 
-            Name = mainTable.TableName;
+            Name = mainTable.TableName + "_entity";
 
             foreach (var mainTableColumn in mainTable.Columns)
             {
