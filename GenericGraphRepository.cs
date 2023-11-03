@@ -940,7 +940,7 @@ namespace SER.Graphql.Reflection.NetCore
             {
                 try
                 {
-                    _optionsDelegate.CurrentValue.CallbackStatus.Invoke(new GraphStatusRequest
+                    _optionsDelegate.CurrentValue.CallbackStatus?.Invoke(new GraphStatusRequest
                     {
                         ClassName = typeof(T).Name,
                         Action = (int)action,

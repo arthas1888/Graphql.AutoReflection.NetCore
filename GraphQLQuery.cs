@@ -23,7 +23,6 @@ namespace SER.Graphql.Reflection.NetCore.Generic
         private readonly IDatabaseMetadata _dbMetadata;
         private readonly ITableNameLookup _tableNameLookup;
         private readonly IHttpContextAccessor _httpContextAccessor;
-        private readonly FillDataExtensions _fillDataExtensions;
         private readonly IDataLoaderContextAccessor _accessor;
         private readonly ISERFieldResolver<TUser, TRole, TUserRole> _fieldResolver;
         private readonly IOptionsMonitor<SERGraphQlOptions> _optionsDelegate;
@@ -32,7 +31,6 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             IDatabaseMetadata dbMetadata,
             ITableNameLookup tableNameLookup,
             IHttpContextAccessor httpContextAccessor,
-            FillDataExtensions fillDataExtensions,
             IDataLoaderContextAccessor accessor,
             ISERFieldResolver<TUser, TRole, TUserRole> fieldResolver,
             IOptionsMonitor<SERGraphQlOptions> optionsDelegate
@@ -41,7 +39,6 @@ namespace SER.Graphql.Reflection.NetCore.Generic
             _dbMetadata = dbMetadata;
             _tableNameLookup = tableNameLookup;
             _httpContextAccessor = httpContextAccessor;
-            _fillDataExtensions = fillDataExtensions;
             _accessor = accessor;
             _optionsDelegate = optionsDelegate;
             _fieldResolver = fieldResolver;

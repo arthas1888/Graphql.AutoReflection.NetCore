@@ -34,15 +34,12 @@ namespace SER.Graphql.Reflection.NetCore.Generic
         where TUserRole : class
     {
         private readonly IHttpContextAccessor _httpContextAccessor;
-        private readonly FillDataExtensions _fillDataExtensions;
         private readonly ILogger _logger;
 
         public MyFieldResolver(
-            FillDataExtensions fillDataExtensions,
             IHttpContextAccessor httpContextAccessor)
         {
             _httpContextAccessor = httpContextAccessor;
-            _fillDataExtensions = fillDataExtensions;
             _logger = _httpContextAccessor.HttpContext.RequestServices.GetService<ILogger<MyFieldResolver<TUser, TRole, TUserRole>>>();
         }
 

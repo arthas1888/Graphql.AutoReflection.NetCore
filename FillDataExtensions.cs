@@ -31,5 +31,7 @@ namespace SER.Graphql.Reflection.NetCore
             return _extensionsDict;
         }
 
+
+        public void Clear() => _extensionsDict.Clear();
     }
 }
