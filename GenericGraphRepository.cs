@@ -502,7 +502,7 @@ namespace SER.Graphql.Reflection.NetCore
         /// <param name="sendObjFirebase"></param>
         /// <param name="includeExpressions"></param>
         /// <returns></returns>
-        public async Task<T> Create(Dictionary<string, object> dict, string alias = "", bool sendObjFirebase = true, List<string> includeExpressions = null)
+        public async Task<T> Create(IResolveFieldContext context, Dictionary<string, object> dict, string alias = "", bool sendObjFirebase = true, List<string> includeExpressions = null)
         {
             dynamic entity = Activator.CreateInstance(typeof(T));
             foreach (var values in dict)
@@ -511,7 +511,7 @@ namespace SER.Graphql.Reflection.NetCore
                 if (propertyInfo.Name == "id") continue;
                 propertyInfo.SetValue(entity, values.Value.GetRealValue(), null);
             }
-            return await Create(entity, alias: alias, sendObjFirebase: sendObjFirebase, includeExpressions: includeExpressions);
+            return await Create(context, entity, alias: alias, sendObjFirebase: sendObjFirebase, includeExpressions: includeExpressions);
 
 
         }
