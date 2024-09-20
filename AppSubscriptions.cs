@@ -118,7 +118,7 @@ namespace SER.Graphql.Reflection.NetCore
         public IObservable<T> Subscribe(IResolveFieldContext context)
         {
 
-            Console.WriteLine($" User --------------------------- IsAuthenticated {_httpContextAccessor.HttpContext.User?.Identity?.IsAuthenticated}");
+            // Console.WriteLine($" User --------------------------- IsAuthenticated {_httpContextAccessor.HttpContext.User?.Identity?.IsAuthenticated}");
 
             if (_httpContextAccessor.HttpContext.User?.Identity == null || !_httpContextAccessor.HttpContext.User.Identity.IsAuthenticated)
             {

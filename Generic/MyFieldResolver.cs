@@ -73,7 +73,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                         .Select(x => x as GraphQLField).ToList(), includes,
                         ((dynamic)context.FieldDefinition.ResolvedType).ResolvedType, args, whereArgs,
                         arguments: context.Arguments, mainType: type);
-                    Console.WriteLine($"whereArgs list: {whereArgs} args {string.Join(", ", args)} ");
+                    // Console.WriteLine($"whereArgs list: {whereArgs} args {string.Join(", ", args)} ");
                     
                     return service
                         .GetAllAsync(context, alias, whereArgs: whereArgs.ToString(),
@@ -88,7 +88,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                         .Select(x => x as GraphQLField).ToList(), includes,
                         context.FieldDefinition.ResolvedType, args, whereArgs,
                         arguments: context.Arguments, mainType: type);
-                    Console.WriteLine($"whereArgs count: {whereArgs}");
+                    // Console.WriteLine($"whereArgs count: {whereArgs}");
 
                     return service.GetCountQuery(context, whereArgs: whereArgs.ToString(),
                         includeExpressions: includes, args: args.ToArray());
@@ -100,7 +100,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                         context.FieldDefinition.ResolvedType, args, whereArgs,
                         arguments: context.Arguments, mainType: type);
                     string param = "";
-                    Console.WriteLine($"whereArgs sum: {whereArgs}");
+                    // Console.WriteLine($"whereArgs sum: {whereArgs}");
                     if (context.FieldAst.SelectionSet.Selections != null)
                     {
                         foreach (var field in context.FieldAst.SelectionSet.Selections.Where(x => x is GraphQLField)
@@ -129,7 +129,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
                         .Select(x => x as GraphQLField).ToList(), includes,
                         context.FieldDefinition.ResolvedType, args, whereArgs,
                         arguments: context.Arguments, mainType: type);
-                    Console.WriteLine($"whereArgs single obj: {whereArgs}");
+                    // Console.WriteLine($"whereArgs single obj: {whereArgs}");
 
                     var dbEntity = service
                         .GetFirstAsync(context, alias, whereArgs: whereArgs.ToString(),

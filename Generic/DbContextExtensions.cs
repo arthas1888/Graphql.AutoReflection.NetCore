@@ -125,7 +125,7 @@ namespace SER.Graphql.Reflection.NetCore.Generic
 
                 }
                 expresion.Append(")");
-                Console.WriteLine(expresion.ToString());
+                // Console.WriteLine(expresion.ToString());
                 source = source.Where(expresion.ToString().ToLower(), values.ToArray());
             }
 

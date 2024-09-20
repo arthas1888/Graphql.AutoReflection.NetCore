@@ -205,7 +205,7 @@ namespace SER.Graphql.Reflection.NetCore
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine(e.ToString());
+                    // Console.WriteLine(e.ToString());
                     objectGraphType.Field(
                       GraphUtils.ResolveGraphType(columnMetadata.Type),
                         columnMetadata.ColumnName
@@ -467,7 +467,7 @@ namespace SER.Graphql.Reflection.NetCore
                         }
                         catch (Exception e)
                         {
-                            Console.WriteLine(e.ToString());
+                            // Console.WriteLine(e.ToString());
                             objectGraphInternal.Field(
                               GraphUtils.ResolveGraphType(typeof(string)),
                                 tableColumn.ColumnName
